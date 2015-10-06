@@ -14,6 +14,9 @@
     <TargetFrameworkProfile />
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
   <Import Project="$(SolutionPropsPath)" Condition="$(SolutionPropsPath) != '' AND Exists($(SolutionPropsPath))" />
   <PropertyGroup Condition="$(SolutionPropsPath) == '' OR !Exists($(SolutionPropsPath))">
     <!-- if this is built standalone, we don't need the solution.props file. -->
@@ -58,6 +61,7 @@
     <Compile Include="Package\PackageName.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Repository\HttpClientPackageRepository.cs" />
     <Compile Include="Package\IPackage.cs" />
     <Compile Include="Package\IPackageName.cs" />
@@ -115,9 +119,7 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Properties\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>:Locate MT.EXE Tool:
