@@ -107,7 +107,6 @@
                 if (string.IsNullOrWhiteSpace(packageHash) || string.IsNullOrWhiteSpace(packageHashAlgorithm))
                 {
                     // delete the file downloaded. VIRUS!!!
-                    needToDelete = true;
                     request.WriteError(ErrorCategory.SecurityError, packageName, Constants.Messages.HashNotFound, packageName);
                     return null;
                 }
