@@ -122,30 +122,6 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <BeforeBuildScript>            
-      if ( $env:APPVEYOR_BUILD_VERSION ) {
-        $v = $env:APPVEYOR_BUILD_VERSION
-
-        $filepath = resolve-path  "$(MSBuildThisFileDirectory)\Properties\AssemblyInfo.cs"
-        $content = (get-content -raw $filepath )
-        $content = $content -replace "assembly: AssemblyVersion.*","assembly: AssemblyVersion(`"$v`")]"
-        $content = $content -replace "assembly: AssemblyFileVersion.*","assembly: AssemblyFileVersion(`"$v`")]"
-        set-content $filepath $content
-
-        # change the version returned in nugetconstant
-        $filepath = resolve-path "$(MSBuildThisFileDirectory)\NugetLightConstant.cs"
-        $content = (get-content -raw $filepath)
-        $content = $content -replace "ProviderVersion = `"*`";","ProviderVersion = `"$v`";"
-        set-content $filepath $content
-
-        $filepath = resolve-path  "$(MSBuildThisFileDirectory)\provider.manifest"
-        $content = (get-content -raw $filepath )
-        $content = $content -replace "\s+version='.*'","    version='$v'"
-        $content = $content -replace "uniqueId='.*'","uniqueId='nuget.$v'"
-        $content = $content -replace "providerVersion='.*'","providerVersion='$v'"
-        $content = $content -replace "href='.*'","href='https://oneget.org/Microsoft.PackageManagement.NuGetProvider-$v.dll'"
-        set-content $filepath $content
-      }      
-
       # unregister any previously compiled assembly
       mkdir hkcu:software\Microsoft\PackageManagement -ea silentlycontinue
       Set-ItemProperty -Path hkcu:software\Microsoft\PackageManagement -Name NuGet -Value $null
