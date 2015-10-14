@@ -102,6 +102,9 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="provider.manifest" />
+  </ItemGroup>  
+  <ItemGroup>
     <Reference Include="Microsoft.CSharp">
     </Reference>
     <Reference Include="System">
