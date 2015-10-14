@@ -23,7 +23,7 @@ before_build:
 
     $content = (get-content -raw $filepath)
 
-    $content = $content -replace "ProviderVersion = `"*`";","ProviderVersion = `"$v`";"
+    $content = $content -replace "ProviderVersion.*;","ProviderVersion = `"$v`";"
 
     set-content $filepath $content
 
