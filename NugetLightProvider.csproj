@@ -125,10 +125,16 @@
       if ( $env:APPVEYOR_BUILD_VERSION ) {
         $v = $env:APPVEYOR_BUILD_VERSION
 
-        $filepath = resolve-path  "$(MSBuildThisFileDirectory)\assembly-version.cs"
+        $filepath = resolve-path  "$(MSBuildThisFileDirectory)\Properties\AssemblyInfo.cs"
         $content = (get-content -raw $filepath )
         $content = $content -replace "assembly: AssemblyVersion.*","assembly: AssemblyVersion(`"$v`")]"
         $content = $content -replace "assembly: AssemblyFileVersion.*","assembly: AssemblyFileVersion(`"$v`")]"
+        set-content $filepath $content
+
+        # change the version returned in nugetconstant
+        $filepath = resolve-path "$(MSBuildThisFileDirectory)\NugetLightConstant.cs"
+        $content = (get-content -raw $filepath)
+        $content = $content -replace "ProviderVersion = `"*`";","ProviderVersion = `"$v`";"
         set-content $filepath $content
 
         $filepath = resolve-path  "$(MSBuildThisFileDirectory)\provider.manifest"
