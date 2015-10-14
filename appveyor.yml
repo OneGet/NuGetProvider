@@ -4,7 +4,12 @@ platform: Any CPU
 build:
   verbosity: minimal
 after_build:
-- ps: Get-ChildItem .\output\v45\Release\bin\* | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName releasebits -Type Auto }
+- ps: >-
+    $version = $env:APPVEYOR_BUILD_VERSION
+
+    Move-Item .\output\v45\Release\bin\Microsoft.PackageManagement.NuGetProvider.dll ".\output\v45\Release\bin\Microsoft.PackageManagement.NuGetProvider-$version.dll"
+
+    Get-ChildItem .\output\v45\Release\bin\*-$version.dll | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName releasebits -Type Auto }
 deploy:
 - provider: AzureBlob
   storage_account_name: oneget
