@@ -14,14 +14,10 @@
     <TargetFrameworkProfile />
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
   </PropertyGroup>
-  <PropertyGroup>
-    <SignAssembly>false</SignAssembly>
-  </PropertyGroup>
   <Import Project="$(SolutionPropsPath)" Condition="$(SolutionPropsPath) != '' AND Exists($(SolutionPropsPath))" />
   <PropertyGroup Condition="$(SolutionPropsPath) == '' OR !Exists($(SolutionPropsPath))">
     <!-- if this is built standalone, we don't need the solution.props file. -->
     <SolutionDir Condition=" '$(SolutionDir)'=='' ">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), PackageProvider.sln))\</SolutionDir>
-    <SolutionRootDir>$(SolutionDir)</SolutionRootDir>
     <!-- Defaults to .Net 4.0 -->
     <TargetFrameworkVersion Condition="$(TargetFrameworkVersion) == '' Or $(TargetFrameworkVersion) == '*Undefined*'">v4.0</TargetFrameworkVersion>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
@@ -103,7 +99,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="provider.manifest" />
-  </ItemGroup>  
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp">
     </Reference>
@@ -125,16 +121,95 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>:Locate MT.EXE Tool:
-for /f "delims=" %25%25a in ('powershell "$p = ((Get-ItemProperty -Path HKCU:\Software\PackageManagement\Tools\MT.EXE -Name Path -ea 0).Path) ;  if( -not $p ) { $p = ((dir ${env:ProgramFiles(x86)} -recurse -ea 0|  where -property name -eq mt.exe | select -first 1 ).FullName) ;    $null = mkdir -Path HKCU:\Software\PackageManagement\Tools\MT.EXE -Force ;    $null = New-ItemProperty -Path HKCU:\Software\PackageManagement\Tools\MT.EXE -Name Path -Value $p -force } ; $p"') do @set MTEXE=%25%25a
-:Run the tool to add the manifest to the binary.
-"%25MTEXE%25" -manifest "$(MSBuildThisFileDirectory)\provider.manifest" -outputresource:"$(TargetPath)";#101</PostBuildEvent>
+    <BeforeBuildScript>            
+      if ( $env:APPVEYOR_BUILD_VERSION ) {
+        $v = $env:APPVEYOR_BUILD_VERSION
+
+        $filepath = resolve-path  "$(MSBuildThisFileDirectory)\assembly-version.cs"
+        $content = (get-content -raw $filepath )
+        $content = $content -replace "assembly: AssemblyVersion.*","assembly: AssemblyVersion(`"$v`")]"
+        $content = $content -replace "assembly: AssemblyFileVersion.*","assembly: AssemblyFileVersion(`"$v`")]"
+        set-content $filepath $content
+
+        $filepath = resolve-path  "$(MSBuildThisFileDirectory)\provider.manifest"
+        $content = (get-content -raw $filepath )
+        $content = $content -replace "\s+version='.*'","    version='$v'"
+        $content = $content -replace "uniqueId='.*'","uniqueId='nuget.$v'"
+        $content = $content -replace "providerVersion='.*'","providerVersion='$v'"
+        $content = $content -replace "href='.*'","href='https://oneget.org/Microsoft.PackageManagement.NuGetProvider-$v.dll'"
+        set-content $filepath $content
+      }      
+
+      # unregister any previously compiled assembly
+      mkdir hkcu:software\Microsoft\PackageManagement -ea silentlycontinue
+      Set-ItemProperty -Path hkcu:software\Microsoft\PackageManagement -Name NuGet -Value $null
+    </BeforeBuildScript>
+    <AfterBuildScript><![CDATA[
+      # Find the manifest tool, sometimes it's not in the PATH
+      $MTEXE = ((Get-ItemProperty -Path HKCU:\Software\PackageManagement\Tools\MT.EXE -Name Path -ea 0).Path)
+
+      if( -not $MTEXE ) { 
+          $MTEXE = ((dir ${env:ProgramFiles(x86)} -recurse -ea 0|  where -property name -eq mt.exe | select -first 1 ).FullName) 
+          $null = mkdir -Path HKCU:\Software\PackageManagement\Tools\MT.EXE -Force 
+          $null = New-ItemProperty -Path HKCU:\Software\PackageManagement\Tools\MT.EXE -Name Path -Value $MTEXE -force
+      }
+
+      # get the version of the file we just built
+      $file = resolve-path "$(TargetDir)Microsoft.PackageManagement.NuGetProvider.dll" 
+
+      $version = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($file).fileversion
+
+      # update the manifest to the right version.
+      $manifestfile = resolve-path  "$(MSBuildThisFileDirectory)\provider.manifest"
+      $newver = "version='$version'"
+
+      "$file and $version and $manifestfile and $(TargetPath)" > C:\fileandversion.txt 
+
+      $newContent = (get-content -raw $manifestfile ) -replace "version='.*'",$newver
+      $newContent = $newContent -replace "providerversion","providerVersion"
+      $newContent = $newContent.Trim();
+      set-content $manifestfile $newcontent
+
+      # Run the manifest tool to add the Swidtag Manifest onto the assembly
+      # (this allows oneget to use it as a provider!)
+      & "$MTEXE" -manifest "$manifestfile" -outputresource:"$(TargetPath)";#101
+    ]]></AfterBuildScript>
   </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
-       Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
+    <PowerShell ScriptBlock="$(BeforeBuildScript)" />
   </Target>
   <Target Name="AfterBuild">
+    <PowerShell ScriptBlock="$(AfterBuildScript)">
+      <Output PropertyName="outputFile" TaskParameter="Outputs" />
+    </PowerShell>
   </Target>
-  -->
+  <UsingTask TaskName="PowerShell" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v12.0.dll">
+    <ParameterGroup>
+      <ScriptBlock ParameterType="System.String" Required="true" />
+      <Inputs ParameterType="Microsoft.Build.Framework.ITaskItem[]" />
+      <Outputs ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="System.Management.Automation" />
+      <Using Namespace="System" />
+      <Using Namespace="System.Linq" />
+      <Using Namespace="System.Management.Automation" />
+      <Using Namespace="System.Management.Automation.Runspaces" />
+      <Using Namespace="System.Text" />
+      <Using Namespace="Microsoft.Build.Framework" />
+      <Using Namespace="Microsoft.Build.Utilities" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        var ps = System.Management.Automation.PowerShell.Create();
+        ps.AddScript( ScriptBlock );
+        List<ITaskItem> outs = new List<ITaskItem>();
+        
+        foreach( var i in ((IEnumerable<object>)ps.Invoke((Inputs ?? new ITaskItem[0]).Where( each => each != null ).Select( each => each.ToString() ))).Where( each => each != null ).Select( each => new TaskItem( each.ToString() )) ) { 
+          outs.Add( i );
+          Console.WriteLine( i.ToString() ); 
+        }
+        
+        Outputs = outs.ToArray();
+      ]]></Code>
+    </Task>
+  </UsingTask>
 </Project>
