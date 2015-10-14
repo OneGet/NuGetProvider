@@ -1,0 +1,20 @@
+version: 2.8.5.{build}
+configuration: Release
+platform: Any CPU
+before_build:
+- ps: .\libs\nuget.exe restore
+build:
+  verbosity: minimal
+after_build:
+- ps: Get-ChildItem .\output\v45\Release\bin\* | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName releasebits -Type Auto }
+deploy:
+- provider: AzureBlob
+  storage_account_name: oneget
+  storage_access_key:
+    secure: D09bvmFT5yslZgmyBBJZ772jQEt+PlTGN7/D0cwQrEECJNk049BOMPIPGigoYku6Z5r486dMxy02PUzGPApBD0V/dZCelNg5e4BQZE6I60b3nIzmsauOG7WEUluvcaeB
+  container: providers
+  artifact: releasebits
+  unzip: true
+  set_content_type: true
+  on:
+    branch: master
