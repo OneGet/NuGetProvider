@@ -154,8 +154,6 @@
                     // provided on the feed
                     if (!Enumerable.SequenceEqual(computedHash, downloadedHash))
                     {
-                        // delete the file downloaded. VIRUS!!!
-                        needToDelete = true;
                         request.Verbose(Constants.Messages.HashNotMatch, packageName);
                     }
 
