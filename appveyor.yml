@@ -5,7 +5,7 @@ before_build:
 - ps: >-
     $buildversion = New-Object System.Version($env:APPVEYOR_BUILD_VERSION)
 
-    $v = New-Object System.Version($buildversion.Major, $buildversion.Minor, $buildversion.Build, ($buildversion.Revision - 16))
+    $v = New-Object System.Version($buildversion.Major, $buildversion.Minor, $buildversion.Build, ($buildversion.Revision - 18))
 
 
     $filepath = resolve-path ".\Properties\AssemblyInfo.cs"
@@ -49,7 +49,7 @@ after_build:
 - ps: >-
     $buildversion = New-Object System.Version($env:APPVEYOR_BUILD_VERSION)
 
-    $version = New-Object System.Version($buildversion.Major, $buildversion.Minor, $buildversion.Build, ($buildversion.Revision - 16))
+    $version = New-Object System.Version($buildversion.Major, $buildversion.Minor, $buildversion.Build, ($buildversion.Revision - 18))
 
 
     Move-Item .\output\v45\Release\bin\Microsoft.PackageManagement.NuGetProvider.dll ".\output\v45\Release\bin\Microsoft.PackageManagement.NuGetProvider-$version.dll"
