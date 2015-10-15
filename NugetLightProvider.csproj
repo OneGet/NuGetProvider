@@ -14,6 +14,15 @@
     <TargetFrameworkProfile />
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DelaySign>true</DelaySign>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <Import Project="$(SolutionPropsPath)" Condition="$(SolutionPropsPath) != '' AND Exists($(SolutionPropsPath))" />
   <PropertyGroup Condition="$(SolutionPropsPath) == '' OR !Exists($(SolutionPropsPath))">
     <!-- if this is built standalone, we don't need the solution.props file. -->
@@ -98,6 +107,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="35MSSharedLib1024.snk" />
     <None Include="provider.manifest" />
   </ItemGroup>
   <ItemGroup>
