@@ -57,9 +57,9 @@ after_build:
     Get-ChildItem .\output\v45\Release\bin\*-$version.dll | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName releasebits -Type Auto }
 deploy:
 - provider: AzureBlob
-  storage_account_name: oneget
+  storage_account_name: packagemanagement
   storage_access_key:
-    secure: D09bvmFT5yslZgmyBBJZ772jQEt+PlTGN7/D0cwQrEECJNk049BOMPIPGigoYku6Z5r486dMxy02PUzGPApBD0V/dZCelNg5e4BQZE6I60b3nIzmsauOG7WEUluvcaeB
+    secure: Zho6vOOLjTHFyRpys3/pFB+NJbNUNhvwI+6un2kEC/SntTZdaKGUiYdnFfzmVgnK4WdmZirhSx4CyC+Wr6AF2YngZBcEihpa9QEgb/Da0qllzlwBJeCeKfjjkJ7R/MMo
   container: providers
   artifact: releasebits
   unzip: true
