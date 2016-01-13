@@ -11,7 +11,7 @@
             get { return _default;}
         }
 
-        public virtual IPackageRepository CreateRepository(string packageSource)
+        public virtual IPackageRepository CreateRepository(string packageSource, Request request)
         {
             if (packageSource == null)
             {
@@ -22,10 +22,10 @@
 
             if (uri.IsFile)
             {
-                return new LocalPackageRepository(uri.LocalPath);
+                return new LocalPackageRepository(uri.LocalPath, request);
             }
 
-            return new HttpClientPackageRepository(packageSource);
+            return new HttpClientPackageRepository(packageSource, request);
         }
     }
 }

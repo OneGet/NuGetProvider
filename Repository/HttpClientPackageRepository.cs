@@ -20,8 +20,9 @@
         /// <summary>
         /// Ctor's
         /// </summary>
+        /// <param name="request">The nuget request object</param>
         /// <param name="queryUrl">Packagesource location</param>
-        internal HttpClientPackageRepository(string queryUrl) 
+        internal HttpClientPackageRepository(string queryUrl, Request request) 
         {
             // Validate the url
 
@@ -30,7 +31,7 @@
 
             if (Uri.TryCreate(queryUrl, UriKind.Absolute, out newUri))
             {
-                validatedUri = PathUtility.ValidateUri(newUri);
+                validatedUri = PathUtility.ValidateUri(newUri, request);
             }
 
             if (validatedUri == null)
@@ -125,16 +126,16 @@
         /// <returns></returns>
         public IEnumerable<IPackage> Search(string searchTerm, Request request)
         {
-            var requestNano = request as NuGetRequest;
+            var nugetRequest = request as NuGetRequest;
 
-            if (requestNano == null)
+            if (nugetRequest == null)
             {
                 yield break;
             }
 
-            requestNano.Debug(Messages.DebugInfoCallMethod3, "HttpClientPackageRepository", "Search", searchTerm);
+            nugetRequest.Debug(Messages.DebugInfoCallMethod3, "HttpClientPackageRepository", "Search", searchTerm);
 
-            var searchQuery = searchTerm.MakeSearchQuery(_queryUri, requestNano.AllowPrereleaseVersions.Value, requestNano.AllVersions.Value);
+            var searchQuery = searchTerm.MakeSearchQuery(_queryUri, nugetRequest.AllowPrereleaseVersions.Value, nugetRequest.AllVersions.Value);
 
             foreach (var pkg in SendRequest(searchQuery, request))
             {

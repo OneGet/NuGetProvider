@@ -190,7 +190,7 @@
     <value>{0}ing package '{1}'</value>
   </data>
   <data name="InvalidFileExtension" xml:space="preserve">
-    <value>The file extension '{0}' is not valid. The required file extension is '.nuspec'.</value>
+    <value>The file extension '{0}' is not valid. The required file extension is '.nupkg'.</value>
   </data>
   <data name="InvalidPackage" xml:space="preserve">
     <value>The package '{0}' does not have the .nuspec file.</value>

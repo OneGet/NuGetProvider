@@ -15,8 +15,9 @@
         /// <summary>
         /// Ctor's
         /// </summary>
+        /// <param name="request"></param>
         /// <param name="physicalPath"></param>
-        public LocalPackageRepository(string physicalPath) {
+        public LocalPackageRepository(string physicalPath, Request request) {
             _path = physicalPath;
         }
 
@@ -177,13 +178,13 @@
         /// <returns></returns>
         private IPackage FindPackage(Func<string, Request, IPackage> openPackage, string packageId, SemanticVersion version, Request request)
         {
-            var requestNano = request as NuGetRequest;
+            var nugetRequest = request as NuGetRequest;
 
-            if (requestNano == null) {
+            if (nugetRequest == null) {
                 return null;
             }
 
-            requestNano.Debug(Resources.Messages.SearchingRepository, "FindPackage", packageId);
+            nugetRequest.Debug(Resources.Messages.SearchingRepository, "FindPackage", packageId);
 
             var lookupPackageName = new PackageName(packageId, version);
 
@@ -339,18 +340,19 @@
         }
 
         private IEnumerable<IPackage> SearchImpl(string searchTerm,  Request request) {
-            var requestNano = request as NuGetRequest;
+            var nugetRequest = request as NuGetRequest;
 
-            if (requestNano == null) {
+            if (nugetRequest == null) {
                 yield break;
             }
 
-            requestNano.Debug(Resources.Messages.SearchingRepository, "LocalPackageRepository", Source);
+            nugetRequest.Debug(Resources.Messages.SearchingRepository, "LocalPackageRepository", Source);
        
             var files = Directory.GetFiles(Source);
 
-            foreach (var pkgItem in files.Select(requestNano.GetPackageByFilePath).Where(pkgItem => pkgItem != null)) {
-                yield return pkgItem.Package;
+            foreach (var package in nugetRequest.FilterOnTags(files.Select(nugetRequest.GetPackageByFilePath).Where(pkgItem => pkgItem != null).Select(pkg => pkg.Package)))
+            {
+                yield return package;
             }
 
             // look in the package source location for directories that contain nupkg files.
@@ -358,8 +360,9 @@
             foreach (var subdir in subdirs) {
                 var nupkgs = Directory.EnumerateFileSystemEntries(subdir, "*.nupkg", SearchOption.TopDirectoryOnly);
 
-                foreach (var pkgItem in nupkgs.Select(requestNano.GetPackageByFilePath).Where(pkgItem => pkgItem != null)) {
-                    yield return pkgItem.Package;
+                foreach (var package in nugetRequest.FilterOnTags(nupkgs.Select(nugetRequest.GetPackageByFilePath).Where(pkgItem => pkgItem != null).Select(pkg => pkg.Package)))
+                {
+                    yield return package;
                 }
             }
         }

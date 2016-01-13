@@ -219,6 +219,12 @@
                     _registeredPackageSources.Remove(id);
                 }
 
+                if (_checkedUnregisteredPackageSources.ContainsKey(id))
+                {
+                    _checkedUnregisteredPackageSources.Remove(id);
+                }
+
+
                 //var source = config.SelectNodes("/configuration/packageSources/add").Cast<XmlNode>().FirstOrDefault(node => String.Equals(node.Attributes["key"].Value, id, StringComparison.CurrentCultureIgnoreCase));
                 
                 //if (source != null)
@@ -317,6 +323,7 @@
                 {
                     _registeredPackageSources.Add(name, new PackageSource
                     {
+                        Request = this,
                         Name = name,
                         Location = location,
                         Trusted = isTrusted,
@@ -340,7 +347,7 @@
             Debug(Resources.Messages.DebugInfoCallMethod3, "NuGetRequest", "ValidateSourceLocation", location);
             //Handling http: or file: cases
             if (Uri.IsWellFormedUriString(location, UriKind.Absolute)) {
-                return PathUtility.ValidateSourceUri(SupportedSchemes, new Uri(location));
+                return PathUtility.ValidateSourceUri(SupportedSchemes, new Uri(location), this);
             }
             try {
                 //UNC or local file
@@ -420,6 +427,17 @@
             return foundPackage;
         }
 
+        private string MakeTagId(PackageItem pkg)
+        {
+            if (pkg == null || pkg.Package == null)
+            {
+                return string.Empty;
+            }
+
+            // the tag id will look like this zlib#1.2.8.8#Jean-loup Gailly;Mark Adler
+            return string.Format(CultureInfo.CurrentCulture, "{0}#{1}", pkg.Package.Id, pkg.Package.Version.ToString());
+        }
+
         /// <summary>
         /// Communicate to the PackageManagement platform about the package info
         /// </summary>
@@ -444,10 +462,22 @@
                         }
                     }
 
+                    // downlevel machine does not have AddTagId interface in request object so it will return null
+                    // hence we can't check it here.
+                    AddTagId(MakeTagId(pkg));
+                    
                     if (AddMetadata(pkg.FastPath, "copyright", pkg.Package.Copyright) == null) {
                         return false;
                     }
                     if (AddMetadata(pkg.FastPath, "description", pkg.Package.Description) == null) {
+                        return false;
+                    }
+                    if (AddMetadata(pkg.FastPath, "licenseNames", pkg.Package.LicenseNames) == null)
+                    {
+                        return false;
+                    }
+                    if (AddMetadata(pkg.FastPath, "requireLicenseAcceptance", pkg.Package.RequireLicenseAcceptance.ToString()) == null)
+                    {
                         return false;
                     }
                     if (AddMetadata(pkg.FastPath, "language", pkg.Package.Language) == null) {
@@ -456,8 +486,65 @@
                     if (AddMetadata(pkg.FastPath, "releaseNotes", pkg.Package.ReleaseNotes) == null) {
                         return false;
                     }
+                    if (AddMetadata(pkg.FastPath, "isLatestVersion", pkg.Package.IsLatestVersion.ToString()) == null)
+                    {
+                        return false;
+                    }
+                    if (AddMetadata(pkg.FastPath, "isAbsoluteLatestVersion", pkg.Package.IsAbsoluteLatestVersion.ToString()) == null)
+                    {
+                        return false;
+                    }
+                    if (pkg.Package.MinClientVersion != null && AddMetadata(pkg.FastPath, "minClientVersion", pkg.Package.MinClientVersion.ToString()) == null)
+                    {
+                        return false;
+                    }
+
+                    if (pkg.Package.VersionDownloadCount != -1)
+                    {
+                        if (AddMetadata(pkg.FastPath, "versionDownloadCount", pkg.Package.VersionDownloadCount.ToString()) == null)
+                        {
+                            return false;
+                        }
+                    }
+
+                    if (pkg.Package.DownloadCount != -1)
+                    {
+                        if (AddMetadata(pkg.FastPath, "downloadCount", pkg.Package.DownloadCount.ToString()) == null)
+                        {
+                            return false;
+                        }
+                    }
+
+                    if (pkg.Package.PackageSize != -1)
+                    {
+                        if (AddMetadata(pkg.FastPath, "packageSize", pkg.Package.PackageSize.ToString()) == null)
+                        {
+                            return false;
+                        }
+                    }
                     if (pkg.Package.Published != null) {
                         if (AddMetadata(pkg.FastPath, "published", pkg.Package.Published.ToString()) == null) {
+                            return false;
+                        }
+                    }
+                    if (pkg.Package.Created != null)
+                    {
+                        if (AddMetadata(pkg.FastPath, "created", pkg.Package.Created.ToString()) == null)
+                        {
+                            return false;
+                        }
+                    }
+                    if (pkg.Package.LastEdited != null)
+                    {
+                        if (AddMetadata(pkg.FastPath, "lastEdited", pkg.Package.LastEdited.ToString()) == null)
+                        {
+                            return false;
+                        }
+                    }
+                    if (pkg.Package.LastUpdated != null)
+                    {
+                        if (AddMetadata(pkg.FastPath, "lastUpdated", pkg.Package.LastUpdated.ToString()) == null)
+                        {
                             return false;
                         }
                     }
@@ -494,6 +581,20 @@
                     if (pkg.Package.IconUrl != null && !String.IsNullOrWhiteSpace(pkg.Package.IconUrl.ToString()))
                     {
                         if (AddLink(pkg.Package.IconUrl, "icon", null, null, null, null, null) == null) {
+                            return false;
+                        }
+                    }
+                    if (pkg.Package.GalleryDetailsUrl != null && !String.IsNullOrWhiteSpace(pkg.Package.GalleryDetailsUrl.ToString()))
+                    {
+                        if (AddLink(pkg.Package.GalleryDetailsUrl, "galleryDetails", null, null, null, null, null) == null)
+                        {
+                            return false;
+                        }
+                    }
+                    if (pkg.Package.LicenseReportUrl != null && !String.IsNullOrWhiteSpace(pkg.Package.LicenseReportUrl.ToString()))
+                    {
+                        if (AddLink(pkg.Package.LicenseReportUrl, "licenseReport", null, null, null, null, null) == null)
+                        {
                             return false;
                         }
                     }
@@ -778,7 +879,7 @@
 
                             if (!SkipValidate.Value)
                             {
-                                isValidated = PathUtility.ValidateSourceUri(SupportedSchemes, srcUri);
+                                isValidated = PathUtility.ValidateSourceUri(SupportedSchemes, srcUri, this);
                             }
 
                             if (SkipValidate.Value || isValidated)
@@ -787,6 +888,7 @@
 
                                 PackageSource newSource = new PackageSource
                                     {
+                                        Request = this,
                                         Location = srcUri.ToString(),
                                         Name = srcUri.ToString(),
                                         Trusted = false,
@@ -813,6 +915,7 @@
 
                         PackageSource newSource = new PackageSource
                             {
+                                Request = this,
                                 Location = src,
                                 Name = src,
                                 Trusted = true,
@@ -966,6 +1069,7 @@
                                         .ToDictionaryNicely(each => each.Attribute("key").Value, each =>
                                             new PackageSource
                                             {
+                                                Request = this,
                                                 Name = each.Attribute("key").Value,
                                                 Location = each.Attribute("value").Value,
                                                 Trusted = each.Attribute("trusted") != null && each.Attribute("trusted").Value.IsTrue(),
@@ -1065,6 +1169,7 @@
                     Debug(Resources.Messages.SourceIsAFilePath, nameOrLocation);
 
                     return new PackageSource() {
+                        Request = this,
                         IsRegistered = false,
                         IsValidated = true,
                         Location = nameOrLocation,
@@ -1080,6 +1185,7 @@
                 if (Directory.Exists(nameOrLocation)) {
                     Debug(Resources.Messages.SourceIsADirectory, nameOrLocation);
                     return new PackageSource() {
+                        Request = this,
                         IsRegistered = false,
                         IsValidated = true,
                         Location = nameOrLocation,
@@ -1098,8 +1204,9 @@
                 }
 
                 // this is an URI, and it looks like one type that we support
-                if (SkipValidate.Value || PathUtility.ValidateSourceUri(SupportedSchemes, uri)) {
+                if (SkipValidate.Value || PathUtility.ValidateSourceUri(SupportedSchemes, uri, this)) {
                     return new PackageSource {
+                        Request = this,
                         IsRegistered = false,
                         IsValidated = !SkipValidate.Value,
                         Location = nameOrLocation,
@@ -1191,7 +1298,7 @@
             }   
         }
 
-        private IEnumerable<IPackage> FilterOnTags(IEnumerable<IPackage> pkgs)
+        internal IEnumerable<IPackage> FilterOnTags(IEnumerable<IPackage> pkgs)
         {
             if (FilterOnTag == null || FilterOnTag.Value.Length == 0)
             {
@@ -1200,7 +1307,7 @@
 
             //Tags should be performed as *AND* intead of *OR"
             //For example -FilterOnTag:{ "A", "B"}, the returned package should have both A and B.
-            return pkgs.Where(each => FilterOnTag.Value.All(tag => each.Tags.IndexOf(tag, StringComparison.OrdinalIgnoreCase) > -1));
+            return pkgs.Where(each => FilterOnTag.Value.All(tag => each.Tags != null && each.Tags.IndexOf(tag, StringComparison.OrdinalIgnoreCase) > -1));
         }
 
         private IEnumerable<IPackage> FilterOnContains(IEnumerable<IPackage> pkgs) {
@@ -1294,7 +1401,7 @@
                     pkgs = FilterOnName(pkgs, name, isNameContainsWildCard);
                 }
 
-                pkgs = FilterOnContains(pkgs);   
+                pkgs = FilterOnContains(pkgs);
 
                 var pkgsItem = pkgs.Select(pkg => new PackageItem
                    {
@@ -1311,33 +1418,6 @@
                 Warning(e.Message);
                 return Enumerable.Empty<PackageItem>();
             }
-        }
-
-        /// <summary>
-        /// Parses Name_Value tags that have special meaning for PSGet
-        /// </summary>
-        /// <param name="tag"></param>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        private bool ParseKeyValueTag(string tag, out string key, out string value)
-        {
-            if (!String.IsNullOrEmpty(tag))
-            {
-                var tagSplit = tag.Split(new string[] { "_" }, 2, StringSplitOptions.RemoveEmptyEntries);
-
-                // ignore wrong entries
-                if (tagSplit.Count() == 2)
-                {
-                    key = tagSplit[0];
-                    value = tagSplit[1];
-                    return true;
-                }
-            }
-
-            key = null;
-            value = null;
-            return false;
         }
     }
 }

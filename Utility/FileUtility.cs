@@ -56,7 +56,7 @@
             }
            
             // Some packages have directories with spaces. However it shows as $20, e.g. Install-Module -name xHyper-VBackup. 
-            // It has something like Content\Deployment\Module%20References\..., with that, the PSModule won't be able to handle it. 
+            // It has something like Content\Deployment\Module%20References\..., with that, the PowerShellGet provider won't be able to handle it. 
             // Add the following code to replace %20 to space.
             string newdest = Regex.Replace(dest, "%20", " ");
 

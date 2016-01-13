@@ -119,6 +119,9 @@
                 case "version":
                     package.Version = value;                   
                     break;
+                case "minclientversion":
+                    package.MinClientVersion = string.IsNullOrWhiteSpace(value) ? null : new Version(value);
+                    break;
                 case "author":
                     package.Authors = value;
                     break;
@@ -134,6 +137,9 @@
                 case "iconurl":
                     package.IconUrl = string.IsNullOrWhiteSpace(value) ? null : new Uri(value);
                     break;
+                case "gallerydetailsurl":
+                    package.GalleryDetailsUrl = string.IsNullOrWhiteSpace(value) ? null : new Uri(value);
+                    break;
                 case "requirelicenseacceptance":
                     package.RequireLicenseAcceptance = XmlConvert.ToBoolean(value);
                     break;
@@ -145,6 +151,12 @@
                     break;
                 case "summary":
                     package.Summary = value;
+                    break;
+                case "content":
+                    var srcAttribute = element.Attributes(XName.Get("src")).FirstOrDefault();
+                    if (srcAttribute != null) {
+                        package.ContentSrcUrl = srcAttribute.Value;
+                    }
                     break;
                 case "releasenotes":
                     package.ReleaseNotes = value;
@@ -168,13 +180,31 @@
                     package.IsAbsoluteLatestVersion = Convert.ToBoolean(value, CultureInfo.InvariantCulture);
                     break;
                 case "published":
-                    package.Published = Convert.ToDateTime(value, CultureInfo.InvariantCulture);
+                    package.Published = string.IsNullOrWhiteSpace(value) ? (null as DateTimeOffset?) : Convert.ToDateTime(value, CultureInfo.InvariantCulture);
+                    break;
+                case "created":
+                    package.Created = string.IsNullOrWhiteSpace(value) ? (null as DateTimeOffset?) : Convert.ToDateTime(value, CultureInfo.InvariantCulture);
+                    break;
+                case "lastupdated":
+                    package.LastUpdated = string.IsNullOrWhiteSpace(value) ? (null as DateTimeOffset?) : Convert.ToDateTime(value, CultureInfo.InvariantCulture);
+                    break;
+                case "lastedited":
+                    package.LastEdited = string.IsNullOrWhiteSpace(value) ? (null as DateTimeOffset?) : Convert.ToDateTime(value, CultureInfo.InvariantCulture);
+                    break;
+                case "licensereporturl":
+                    package.LicenseReportUrl = string.IsNullOrWhiteSpace(value) ? null : new Uri(value);
                     break;
                 case "reportabuseurl":
-                    package.ReportAbuseUrl = string.IsNullOrWhiteSpace(value) ? null : new Uri(value);;
+                    package.ReportAbuseUrl = string.IsNullOrWhiteSpace(value) ? null : new Uri(value);
                     break;
                 case "downloadcount":
                     package.DownloadCount = XmlConvert.ToInt64(value);
+                    break;
+                case "versiondownloadcount":
+                    package.VersionDownloadCount = XmlConvert.ToInt64(value);
+                    break;
+                case "packagesize":
+                    package.PackageSize = XmlConvert.ToInt64(value);
                     break;
                 case "properties":
                     var node = element.FirstNode;

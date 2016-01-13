@@ -28,7 +28,7 @@
         /// </summary>
         internal static readonly Dictionary<string, string[]> Features = new Dictionary<string, string[]> {
 
-            //Required by PSModule
+            //Required by PowerShellGet provider
             { Constants.Features.SupportsPowerShellModules, Constants.FeaturePresent },
 
             // specify the extensions that your provider uses for its package files (if you have any)
@@ -88,11 +88,6 @@
             }
 
             request.Debug(Resources.Messages.DebugInfoCallMethod, PackageProviderName, "InitializeProvider");
-
-            string location = typeof(NuGetProvider).GetTypeInfo().Assembly.ManifestModule.FullyQualifiedName;
-
-            // add features.exe for powershellget
-            Features.AddOrSet("exe", new[] { location });
         }            
 
         /// <summary>

@@ -2,6 +2,6 @@
 {
     public interface IPackageRepositoryFactory
     {
-        IPackageRepository CreateRepository(string packageSource);
+        IPackageRepository CreateRepository(string packageSource, Request request);
     }
 }

@@ -6,6 +6,10 @@
 
     public class PackageBase : IPackage
     {
+        private long _downloadCount = -1;
+        private long _versionDownloadCount = -1;
+        private long _packageSize = -1;
+
         public PackageBase()
         {
             AdditionalProperties = new Dictionary<string, string>();
@@ -40,7 +44,13 @@
         public string FullFilePath { get; set; }
 
         public DateTimeOffset? Published { get; set;}
-  
+
+        public DateTimeOffset? Created { get; set; }
+
+        public DateTimeOffset? LastUpdated { get; set; }
+
+        public DateTimeOffset? LastEdited { get; set; }
+
         public string Title{ get; set;}
 
         public Uri IconUrl{ get; set;}
@@ -48,6 +58,8 @@
         public Uri LicenseUrl{ get; set;}
 
         public Uri ProjectUrl{ get; set;}
+
+        public Uri GalleryDetailsUrl { get; set; }
 
         public bool RequireLicenseAcceptance{ get; set;}
 
@@ -57,6 +69,8 @@
 
         public string Summary{ get; set;}
 
+        public string ContentSrcUrl { get; set; }
+
         public string ReleaseNotes{ get; set;}
 
         public string Language{ get; set;}
@@ -65,11 +79,49 @@
  
         public string Copyright{ get; set;}
 
-        public Version MinClientVersion{ get; set;}      
+        public string LicenseNames { get; set; }
 
-        public long DownloadCount { get; set; }
+        public Version MinClientVersion{ get; set;}
+
+        public long DownloadCount
+        {
+            get
+            {
+                return _downloadCount;
+            }
+            set
+            {
+                _downloadCount = value;
+            }
+        }
 
         public Uri ReportAbuseUrl{ get; set; }
+
+        public Uri LicenseReportUrl { get; set; }
+
+        public long VersionDownloadCount
+        {
+            get
+            {
+                return _versionDownloadCount;
+            }
+            set
+            {
+                _versionDownloadCount = value;
+            }
+        }
+
+        public long PackageSize
+        {
+            get
+            {
+                return _packageSize;
+            }
+            set
+            {
+                _packageSize = value;
+            }
+        }
 
         IEnumerable<string> IPackage.Authors
         {

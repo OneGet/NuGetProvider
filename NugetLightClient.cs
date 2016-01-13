@@ -107,6 +107,7 @@
                 if (string.IsNullOrWhiteSpace(packageHash) || string.IsNullOrWhiteSpace(packageHashAlgorithm))
                 {
                     // delete the file downloaded. VIRUS!!!
+                    needToDelete = true;
                     request.WriteError(ErrorCategory.SecurityError, packageName, Constants.Messages.HashNotFound, packageName);
                     return null;
                 }
@@ -154,6 +155,7 @@
                     // provided on the feed
                     if (!Enumerable.SequenceEqual(computedHash, downloadedHash))
                     {
+                        // delete the file downloaded. VIRUS!!!
                         request.Verbose(Constants.Messages.HashNotMatch, packageName);
                     }
 
@@ -212,9 +214,16 @@
                 packageToBeInstalled = NuGetClient.InstallPackageLocal(pkgItem.Id, pkgItem.Version, request, pkgItem.PackageSource, fileLocation);
             }
             else
-            {
+            {             
+                //V2 download package protocol:
+                //sample url: http://www.nuget.org/api/v2/package/jQuery/2.1.3
+                string append = String.Format(CultureInfo.InvariantCulture, "/package/{0}/{1}", pkgItem.Id, pkgItem.Version);
+                string httpquery = PathUtility.UriCombine(pkgItem.PackageSource.Repository.Source, append);
+
                 // wait for the result from installpackage
-                packageToBeInstalled = NuGetClient.InstallPackage(pkgItem.Id, pkgItem.Version, request, pkgItem.PackageSource, pkgItem.PackageSource.Repository.Source, pkgItem.Package.PackageHash, pkgItem.Package.PackageHashAlgorithm);
+                packageToBeInstalled = NuGetClient.InstallPackage(pkgItem.Id, pkgItem.Version, request, pkgItem.PackageSource,
+                    string.IsNullOrWhiteSpace(pkgItem.Package.ContentSrcUrl) ? httpquery : pkgItem.Package.ContentSrcUrl, 
+                    pkgItem.Package.PackageHash, pkgItem.Package.PackageHashAlgorithm);
             }
 
             // Package is installed successfully
@@ -295,7 +304,13 @@
                 }
                 else
                 {
-                    NuGetClient.DownloadPackage(pkgItem.Id, pkgItem.Version, destLocation, pkgItem.PackageSource.Repository.Source, request);
+                    //V2 download package protocol:
+                    //sample url: http://www.nuget.org/api/v2/package/jQuery/2.1.3
+                    string append = String.Format(CultureInfo.InvariantCulture, "/package/{0}/{1}", pkgItem.Id, pkgItem.Version);
+                    string httpquery = PathUtility.UriCombine(pkgItem.PackageSource.Repository.Source, append);
+
+                    NuGetClient.DownloadPackage(pkgItem.Id, pkgItem.Version, destLocation,
+                        string.IsNullOrWhiteSpace(pkgItem.Package.ContentSrcUrl) ? httpquery : pkgItem.Package.ContentSrcUrl, request);
                 }
             }
             catch (Exception ex)
@@ -330,7 +345,7 @@
 
             bool hasDependencyLoop = false;
             // Get the dependencies that are not already installed
-            var dependencies = NuGetClient.GetPackageDependenciesToInstall(request, pkgItem, ref hasDependencyLoop);
+            var dependencies = NuGetClient.GetPackageDependenciesToInstall(request, pkgItem, ref hasDependencyLoop).ToArray();
              
             // If there is a dependency loop. Warn the user and don't install the package
             if (hasDependencyLoop)
@@ -696,22 +711,16 @@
                     throw new ArgumentException(Constants.Messages.UriSchemeNotSupported, queryUrl);
                 }
 
-                //V2 download package protocol:
-                //sample url: http://www.nuget.org/api/v2/package/jQuery/2.1.3
-
-                string append = String.Format(CultureInfo.InvariantCulture, "/package/{0}/{1}", packageName, version);
-                string httpquery = PathUtility.UriCombine(queryUrl, append);
-
                 long result = 0;
 
                 // Do not need to validate here again because the job is done by the httprepository that supplies the queryurl
                 //Downloading the package
                 //request.Verbose(httpquery);
-                result = DownloadDataToFileAsync(destination, httpquery, request).Result;                   
+                result = DownloadDataToFileAsync(destination, queryUrl, request).Result;                   
 
                 if (result == 0 || !File.Exists(destination))
                 {
-                    request.Verbose(Messages.FailedDownloadPackage, packageName, httpquery);
+                    request.Verbose(Messages.FailedDownloadPackage, packageName, queryUrl);
                     request.Warning(Constants.Messages.SourceLocationNotValid, queryUrl);
                 } else {
                     request.Verbose(Messages.CompletedDownload, packageName);
@@ -728,8 +737,7 @@
         /// </summary>
         /// <returns></returns>
         private static HttpClient GetHttpClient(Request request) {
-            HttpClient client = new HttpClient();
-            client.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/atom+xml,application/xml");
+            HttpClient client = new HttpClient(new HttpClientHandler() { UseDefaultCredentials = true });
             client.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Charset", "UTF-8");
             // Request for gzip and deflate encoding to make the response lighter.
             client.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Encoding", "gzip,deflate");
@@ -798,7 +806,7 @@
 
             var client = GetHttpClient(request);
 
-            var response = PathUtility.GetHttpResponse(client, query);
+            var response = PathUtility.GetHttpResponse(client, query, request);
 
             // Check that response was successful or throw exception
             if (response == null || !response.IsSuccessStatusCode)
@@ -833,7 +841,7 @@
 
             var client = GetHttpClient(request);
 
-            var response = PathUtility.GetHttpResponse(client, uri);
+            var response = PathUtility.GetHttpResponse(client, uri, request);
 
             // Check that response was successful or write error
             if (response == null || !response.IsSuccessStatusCode)
@@ -869,7 +877,7 @@
 
             var client = GetHttpClient(request);
 
-            var response = PathUtility.GetHttpResponse(client, query);
+            var response = PathUtility.GetHttpResponse(client, query, request);
 
             // Check that response was successful or write error
             if (response == null || !response.IsSuccessStatusCode)

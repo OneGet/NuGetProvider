@@ -121,6 +121,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
         public abstract bool ShouldContinueWithUntrustedPackageSource(string package, string packageSource);
 
+        public abstract bool ShouldContinue(string query, string caption, ref bool yesToAll, ref bool noToAll);
+
+        public abstract bool ShouldContinue(string query, string caption);
+
         public abstract bool AskPermission(string permission);
 
         public abstract bool IsInteractive {get;}
@@ -154,6 +158,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
         [SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", Justification = "It's a generated code")]
         public abstract string AddMetadata(string elementPath, Uri @namespace, string name, string value);
+
+        public abstract string AddTagId(string tagId);
 
         public abstract string AddMeta(string elementPath);
 

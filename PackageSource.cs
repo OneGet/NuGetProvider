@@ -20,13 +20,15 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
         internal bool IsValidated { get; set; }
 
+        internal Request Request { get; set; }
+
         internal IPackageRepository Repository
         {
             get
             {
                 if (!IsSourceAFile)
                 {
-                    return _repository ?? (_repository = PackageRepositoryFactory.Default.CreateRepository(Location));
+                    return _repository ?? (_repository = PackageRepositoryFactory.Default.CreateRepository(Location, Request));
                 }
                 return null;
             }

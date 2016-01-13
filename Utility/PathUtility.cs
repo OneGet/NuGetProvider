@@ -3,16 +3,17 @@ namespace Microsoft.PackageManagement.NuGetProvider
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Threading;
     using System.Threading.Tasks;
 
     internal static class PathUtility
     {
         private static readonly char[] _invalidPathChars = Path.GetInvalidPathChars();
-        private static int _timeOut = -1;
 
         internal static string EnsureTrailingSlash(string path)
         {
@@ -56,7 +57,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             return Path.GetExtension(path).Equals(NuGetConstant.PackageExtension, StringComparison.OrdinalIgnoreCase);
         }
 
-        internal static bool ValidateSourceUri(IEnumerable<string> supportedSchemes, Uri srcUri)
+        internal static bool ValidateSourceUri(IEnumerable<string> supportedSchemes, Uri srcUri, Request request)
         {
 
             if (!supportedSchemes.Contains(srcUri.Scheme.ToLowerInvariant()))
@@ -75,26 +76,48 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
 
             //validate uri source location
-            return ValidateUri(srcUri) != null;
+            return ValidateUri(srcUri, request) != null;
         }
 
-        internal static HttpResponseMessage GetHttpResponse(HttpClient httpClient, string query, int timeOut=-1)
+        internal static HttpResponseMessage GetHttpResponse(HttpClient httpClient, string query, Request request)
         {
-            Task task = null;
+            var cts = new CancellationTokenSource();
+
+            Timer timer = null;
 
             try
             {
-                task = httpClient.GetAsync(query);
-                task.Wait(timeOut);
-            }
-            catch
-            {
-                return null;
-            }
+                Task task = httpClient.GetAsync(query, cts.Token);
 
-            if (task.IsCompleted && task is Task<HttpResponseMessage>)
+                // check every second to see whether request is cancelled
+                timer = new Timer(_ =>
+                    {
+                        if (request.IsCanceled)
+                        {
+                            cts.Cancel();
+                        }
+                    },
+                    null, 0, 1000);                
+                
+                // start the task
+                task.Wait();
+
+                if (task.IsCompleted && task is Task<HttpResponseMessage>)
+                {
+                    return (task as Task<HttpResponseMessage>).Result;
+                }
+            }
+            finally
             {
-                return (task as Task<HttpResponseMessage>).Result;
+                // dispose the token
+                cts.Dispose();
+                if (timer != null)
+                {
+                    // stop timer
+                    timer.Change(Timeout.Infinite, Timeout.Infinite);
+                    // dispose it
+                    timer.Dispose();
+                }
             }
 
             return null;
@@ -104,12 +127,13 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// Returns the validated uri. Returns null if we cannot validate it
         /// </summary>
         /// <param name="query"></param>
+        /// <param name="request"></param>
         /// <returns></returns>
-        internal static Uri ValidateUri(Uri query)
-        {            
-            var client = new HttpClient();
+        internal static Uri ValidateUri(Uri query, Request request)
+        {
+            var client = new HttpClient(new HttpClientHandler() { UseDefaultCredentials = true });
 
-            var response = GetHttpResponse(client, query.AbsoluteUri, _timeOut);
+            var response = GetHttpResponse(client, query.AbsoluteUri, request);
 
             if (response == null)
             {
@@ -149,7 +173,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             //'FoooBarr' is an any random package id
             string queryUri = "FoooBarr".MakeFindPackageByIdQuery(PathUtility.UriCombine(query.AbsoluteUri, NuGetConstant.FindPackagesById));
 
-            response = GetHttpResponse(client, queryUri, _timeOut);
+            response = GetHttpResponse(client, queryUri, request);
 
             // The link is not valid
             if (response == null || !response.IsSuccessStatusCode)
