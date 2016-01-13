@@ -55,14 +55,4 @@ after_build:
     Move-Item .\output\v45\Release\bin\Microsoft.PackageManagement.NuGetProvider.dll ".\output\v45\Release\bin\Microsoft.PackageManagement.NuGetProvider-$version.dll"
 
     Get-ChildItem .\output\v45\Release\bin\*-$version.dll | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName releasebits -Type Auto }
-deploy:
-- provider: AzureBlob
-  storage_account_name: packagemanagement
-  storage_access_key:
-    secure: Zho6vOOLjTHFyRpys3/pFB+NJbNUNhvwI+6un2kEC/SntTZdaKGUiYdnFfzmVgnK4WdmZirhSx4CyC+Wr6AF2YngZBcEihpa9QEgb/Da0qllzlwBJeCeKfjjkJ7R/MMo
-  container: providers
-  artifact: releasebits
-  unzip: true
-  set_content_type: true
-  on:
-    branch: master
+deploy: off
