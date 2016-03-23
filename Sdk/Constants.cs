@@ -10,6 +10,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
         internal const string Download = "Download";
         internal const string Install = "Install";
         public readonly static string[] FeaturePresent = new string[0];
+        internal const string CurrentUser = "CurrentUser";
+        internal const string AllUsers = "AllUsers";
+
         //public static string[] Empty = new string[0];
 
         internal static class Features
@@ -57,6 +60,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
             public const string DependencyLoopDetected = "MSG:DependencyLoopDetected";
             public const string CouldNotGetResponseFromQuery = "MSG:CouldNotGetResponseFromQuery";
             public const string SkippedDownloadedPackage = "MSG:SkippedDownloadedPackage";
+            public const string InstallRequiresCurrentUserScopeParameterForNonAdminUser = "MSG:InstallRequiresCurrentUserScopeParameterForNonAdminUser";
+            
         }
 
         internal static class OptionType {

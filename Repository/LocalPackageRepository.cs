@@ -17,7 +17,7 @@
         /// </summary>
         /// <param name="request"></param>
         /// <param name="physicalPath"></param>
-        public LocalPackageRepository(string physicalPath, Request request) {
+        public LocalPackageRepository(string physicalPath, NuGetRequest request) {
             _path = physicalPath;
         }
 
@@ -164,7 +164,8 @@
         /// <param name="version">Package Name</param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public virtual IPackage FindPackage(string packageId, SemanticVersion version, Request request) {
+        public virtual IPackage FindPackage(string packageId, SemanticVersion version, NuGetRequest request)
+        {
             return FindPackage(OpenPackage, packageId, version, request);
         }
 
@@ -174,12 +175,10 @@
         /// <param name="openPackage">Delegate function which is actually finding a package</param>
         /// <param name="packageId">Package Id</param>
         /// <param name="version">Package version</param>
-        /// <param name="request"></param>
+        /// <param name="nugetRequest"></param>
         /// <returns></returns>
-        private IPackage FindPackage(Func<string, Request, IPackage> openPackage, string packageId, SemanticVersion version, Request request)
+        private IPackage FindPackage(Func<string, Request, IPackage> openPackage, string packageId, SemanticVersion version, NuGetRequest nugetRequest)
         {
-            var nugetRequest = request as NuGetRequest;
-
             if (nugetRequest == null) {
                 return null;
             }
@@ -194,7 +193,7 @@
             // before opening the package. To avoid creating file name strings, we attempt to specifically match everything after the last path separator
             // which would be the file name and extension.
             return (from path in GetPackageLookupPaths(packageId, version)
-                let package = GetPackage(openPackage, path, request)
+                    let package = GetPackage(openPackage, path, nugetRequest)
                 where lookupPackageName.Equals(new PackageName(package.Id, package.Version))
                 select package).FirstOrDefault();
         }
@@ -276,7 +275,8 @@
         /// <param name="packageId">Package Id</param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public IEnumerable<IPackage> FindPackagesById(string packageId, Request request) {
+        public IEnumerable<IPackage> FindPackagesById(string packageId, NuGetRequest request)
+        {
             return FindPackagesById(OpenPackage, packageId, request);
         }
 
@@ -320,15 +320,14 @@
         /// Search the entire repository for the case when a user does not provider package name or uses wildcards in the name.
         /// </summary>
         /// <param name="searchTerm">The Searchterm</param>
-        /// <param name="request"></param>
+        /// <param name="nugetRequest"></param>
         /// <returns></returns>
-        public IEnumerable<IPackage> Search(string searchTerm, Request request) {
-            var packages = SearchImpl(searchTerm, request);
+        public IEnumerable<IPackage> Search(string searchTerm, NuGetRequest nugetRequest)
+        {
+            var packages = SearchImpl(searchTerm, nugetRequest);
             if (packages == null) {
                 return Enumerable.Empty<IPackage>();
             }
-
-            var nugetRequest = request as NuGetRequest;
 
             if (nugetRequest != null && nugetRequest.AllVersions.Value) {
                 //return whatever we can find
@@ -339,9 +338,8 @@
             return packages.GroupBy(p => p.Id).Select(each => each.OrderByDescending(pp => pp.Version).FirstOrDefault());
         }
 
-        private IEnumerable<IPackage> SearchImpl(string searchTerm,  Request request) {
-            var nugetRequest = request as NuGetRequest;
-
+        private IEnumerable<IPackage> SearchImpl(string searchTerm, NuGetRequest nugetRequest)
+        {
             if (nugetRequest == null) {
                 yield break;
             }

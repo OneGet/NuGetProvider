@@ -1,6 +1,8 @@
 ﻿namespace Microsoft.PackageManagement.NuGetProvider 
 {
     using System;
+    using System.Text;
+    using System.Net.Http;
     using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
@@ -11,12 +13,17 @@
     using System.Xml.Linq;
     using System.Collections.Concurrent;
     using Resources;
+    using System.Security.Cryptography;
+    using System.Security;
+    using System.Runtime.InteropServices;
+    using System.Net;
 
     /// <summary> 
     /// This class drives the Request class that is an interface exposed from the PackageManagement Platform to the provider to use.
     /// </summary>
     public abstract class NuGetRequest : Request {
         private static readonly Regex _regexFastPath = new Regex(@"\$(?<source>[\w,\+,\/,=]*)\\(?<id>[\w,\+,\/,=]*)\\(?<version>[\w,\+,\/,=]*)\\(?<sources>[\w,\+,\/,=]*)");
+        private static readonly byte[] _nugetBytes = Encoding.UTF8.GetBytes("NuGet");
         private string _configurationFileLocation;
         private XDocument _config;
 
@@ -26,9 +33,12 @@
         internal readonly Lazy<bool> ExcludeVersion;
         internal readonly Lazy<string[]> FilterOnTag;
         internal readonly Lazy<string[]> Headers;
+        internal readonly Lazy<string> Scope;
+
 
         private static IDictionary<string, PackageSource> _registeredPackageSources;
         private static IDictionary<string, PackageSource> _checkedUnregisteredPackageSources = new ConcurrentDictionary<string, PackageSource>();
+        private string _destinationPath = null;
 
         internal Lazy<bool> SkipValidate;  //??? Seems to be a design choice. Why let a user to decide?
         // we cannot enable skipdepedencies because this will break downlevel psget which sets skipdependencies to true
@@ -36,6 +46,8 @@
         //internal ImplictLazy<bool> ContinueOnFailure;
         //internal ImplictLazy<bool> FindByCanonicalId;
 
+        private HttpClient _httpClient;
+        private HttpClient _httpClientWithoutAcceptHeader;
 
         internal const string DefaultConfig = @"<?xml version=""1.0""?>
 <configuration>
@@ -54,6 +66,7 @@
             AllVersions = new Lazy<bool>(() => GetOptionValue("AllVersions").IsTrue());
 
             SkipValidate = new Lazy<bool>(() => GetOptionValue("SkipValidate").IsTrue());
+            Scope = new Lazy<string>(() => GetOptionValue("Scope"));
 
             //SkipDependencies = new Lazy<bool>(() => GetOptionValue("SkipDependencies").IsTrue());
             //ContinueOnFailure = new ImplictLazy<bool>(() => GetOptionValue("ContinueOnFailure").IsTrue());           
@@ -66,22 +79,121 @@
         /// Package sources
         /// </summary>
         internal string[] OriginalSources {get; set;}
-       
+
+        /// <summary>
+        /// Package installation location used by get-installedpackages.
+        /// </summary>
+        internal IEnumerable<string> InstalledPath
+        {
+            get
+            {
+                var path = GetOptionValue("Destination");
+
+                if (!string.IsNullOrWhiteSpace(path))
+                {
+                    yield return Path.GetFullPath(path);
+                }
+                else
+                {
+                    // If a user does not specify -destination, we will look into the default locations.
+                    yield return AllUserDefaultInstallLocation;
+                    yield return CurrentUserDefaultInstallLocation;
+                }
+            }
+        }
+
         /// <summary>
         /// Package destination path
         /// </summary>
         internal string Destination {
             get {
-                return Path.GetFullPath(GetOptionValue("Destination"));
+                if (_destinationPath != null)
+                {
+                    return _destinationPath;
+                }
+                var path = GetOptionValue("Destination");
+
+                if (!string.IsNullOrWhiteSpace(path))
+                {
+                    _destinationPath = Path.GetFullPath(path);
+                    return _destinationPath;
+                }
+
+                // If a user does not give -destination for the install, we put the package under $env:USERPROFILE\nuget\packages folder
+                // or  $env:programfiles\NuGet\Packages\  if you are an admin.
+                try
+                {
+                    var scope = (Scope == null) ? null : Scope.Value;
+                    scope = string.IsNullOrWhiteSpace(scope) ? Constants.AllUsers : scope;
+                    string basePath;
+
+                    if (scope.EqualsIgnoreCase(Constants.CurrentUser))
+                    {
+                        // Does not matter whether elevated or not
+                        basePath = CurrentUserDefaultInstallLocation;
+                    }
+                    else if (ProviderServices.IsElevated)
+                    {
+                        //Scope=AllUser or No Scope but elevated
+                        basePath = AllUserDefaultInstallLocation;
+                    }
+                    else
+                    {
+                        //Scope=AllUser but not elevated
+                        WriteError(ErrorCategory.InvalidOperation, ErrorCategory.InvalidOperation.ToString(),
+                            Constants.Messages.InstallRequiresCurrentUserScopeParameterForNonAdminUser, AllUserDefaultInstallLocation, CurrentUserDefaultInstallLocation);
+                        return string.Empty;
+                    }
+
+                    if (!Directory.Exists(basePath))
+                    {
+                        Directory.CreateDirectory(basePath);
+                    }
+                    _destinationPath = basePath;
+                    return basePath;
+                }
+                catch (Exception e)
+                {
+                    e.Dump(this);
+                    WriteError(ErrorCategory.InvalidArgument, "Destination", Constants.Messages.MissingRequiredParameter, "Destination");
+                    return string.Empty;
+                }                
             }
         }
 
-        /// <summary>
-        /// Get the PackageItem object from the fast path
-        /// </summary>
-        /// <param name="fastPath"></param>
-        /// <returns></returns>
-        internal PackageItem GetPackageByFastpath(string fastPath) {
+
+        internal string CurrentUserDefaultInstallLocation
+        {
+            get
+            {
+#if CORECLR
+                return Path.Combine(Environment.GetEnvironmentVariable("UserProfile"), "NuGet", "Packages"); 
+#else
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "NuGet", "Packages");
+#endif
+            }
+        
+        }
+
+        internal string AllUserDefaultInstallLocation
+        {
+            get
+            {
+#if CORECLR
+                return Path.Combine(Environment.GetEnvironmentVariable("ProgramFiles"), "NuGet", "Packages"); 
+#else
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "NuGet", "Packages");
+#endif
+            }
+        }
+
+
+            /// <summary>
+            /// Get the PackageItem object from the fast path
+            /// </summary>
+            /// <param name="fastPath"></param>
+            /// <returns></returns>
+            internal PackageItem GetPackageByFastpath(string fastPath) {
             Debug(Resources.Messages.DebugInfoCallMethod3, "NuGetRequest", "GetPackageByFastpath", fastPath);
 
             string sourceLocation;
@@ -94,6 +206,12 @@
 
                 if (source.IsSourceAFile) {
                     return GetPackageByFilePath(sourceLocation);
+                }
+
+                // repository should not be null if source is not a file
+                if (source.Repository == null)
+                {
+                    return null;
                 }
 
                 // Have to find package again to get possible dependencies
@@ -439,6 +557,91 @@
         }
 
         /// <summary>
+        /// HttpClient with Accept-CharSet and Accept-Encoding Header
+        /// We want to reuse HttpClient
+        /// </summary>
+        internal HttpClient Client
+        {
+            get
+            {
+                if (_httpClient == null)
+                {
+                    _httpClient = GetHttpClientHelper();
+
+                    _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Charset", "UTF-8");
+                    // Request for gzip and deflate encoding to make the response lighter.
+                    _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Encoding", "gzip,deflate");
+
+                    foreach (var header in Headers.Value)
+                    {
+                        // header is in the format "A=B" because OneGet doesn't support Dictionary parameters
+                        if (!String.IsNullOrEmpty(header))
+                        {
+                            var headerSplit = header.Split(new string[] { "=" }, 2, StringSplitOptions.RemoveEmptyEntries);
+
+                            // ignore wrong entries
+                            if (headerSplit.Count() == 2)
+                            {
+                                _httpClient.DefaultRequestHeaders.TryAddWithoutValidation(headerSplit[0], headerSplit[1]);
+                            }
+                            else
+                            {
+                                Warning(Messages.HeaderIgnored, header);
+                            }
+                        }
+                    }
+                }
+
+                return _httpClient;
+            }
+        }
+
+        /// <summary>
+        /// HttpClient without any Accept header (this will only have User-Agent header)
+        /// </summary>
+        internal HttpClient ClientWithoutAcceptHeader
+        {
+            get
+            {
+                if (_httpClientWithoutAcceptHeader == null)
+                {
+                    _httpClientWithoutAcceptHeader = GetHttpClientHelper();
+                }
+
+                return _httpClientWithoutAcceptHeader;
+            }
+        }
+
+        private HttpClient GetHttpClientHelper()
+        {
+            var clientHandler = new HttpClientHandler();
+
+            var networkCredential = GetNetworkCredential();
+
+            // if we are given a network credential, use that
+            if (networkCredential != null)
+            {
+                // else use the one given to us
+                clientHandler.Credentials = networkCredential;
+                clientHandler.PreAuthenticate = true;
+            }
+            else
+            {
+                clientHandler.UseDefaultCredentials = true;
+            }
+
+            // do not need to set proxy of httpClient or httpClientHandler because it will use system proxy setting by default
+            // discussion here (https://github.com/dotnet/corefx/issues/7037)
+
+            var httpClient = new HttpClient(clientHandler);
+
+            // Mozilla/5.0 is the general token that says the browser is Mozilla compatible, and is common to almost every browser today.
+            httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 NuGet");
+
+            return httpClient;
+        }
+
+        /// <summary>
         /// Communicate to the PackageManagement platform about the package info
         /// </summary>
         /// <param name="pkg"></param>
@@ -501,7 +704,7 @@
 
                     if (pkg.Package.VersionDownloadCount != -1)
                     {
-                        if (AddMetadata(pkg.FastPath, "versionDownloadCount", pkg.Package.VersionDownloadCount.ToString()) == null)
+                        if (AddMetadata(pkg.FastPath, "versionDownloadCount", pkg.Package.VersionDownloadCount.ToString(CultureInfo.CurrentCulture)) == null)
                         {
                             return false;
                         }
@@ -509,7 +712,7 @@
 
                     if (pkg.Package.DownloadCount != -1)
                     {
-                        if (AddMetadata(pkg.FastPath, "downloadCount", pkg.Package.DownloadCount.ToString()) == null)
+                        if (AddMetadata(pkg.FastPath, "downloadCount", pkg.Package.DownloadCount.ToString(CultureInfo.CurrentCulture)) == null)
                         {
                             return false;
                         }
@@ -517,7 +720,7 @@
 
                     if (pkg.Package.PackageSize != -1)
                     {
-                        if (AddMetadata(pkg.FastPath, "packageSize", pkg.Package.PackageSize.ToString()) == null)
+                        if (AddMetadata(pkg.FastPath, "packageSize", pkg.Package.PackageSize.ToString(CultureInfo.CurrentCulture)) == null)
                         {
                             return false;
                         }
@@ -648,13 +851,13 @@
             {
                 bool found = false;
                 // if directory does not exist then just return false
-                if (!Directory.Exists(Destination))
+                if (!InstalledPath.Any(Directory.Exists))
                 {
                     return found;
                 }
 
-                // look in the destination directory for directories that contain *.nupkg & .nuspec files.
-                var subdirs = Directory.EnumerateDirectories(Destination);
+                // look in the destination directory for directories that contain *.nupkg & .nuspec files.  
+                var subdirs = InstalledPath.SelectMany(Directory.EnumerateDirectories);
 
                 foreach (var subdir in subdirs)
                 {
@@ -785,7 +988,7 @@
         /// <param name="minInclusive"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        internal IEnumerable<PackageItem> GetPackageById(string name, Request request, string requiredVersion = null,
+        internal IEnumerable<PackageItem> GetPackageById(string name, NuGetRequest request, string requiredVersion = null,
             string minimumVersion = null, string maximumVersion = null, bool minInclusive = true, bool maxInclusive = true) {
             if (String.IsNullOrWhiteSpace(name))
             {
@@ -838,6 +1041,7 @@
                     // Check whether we've already processed this item before
                     if (_checkedUnregisteredPackageSources.ContainsKey(src))
                     {
+                        _checkedUnregisteredPackageSources[src].Request = this;
                         yield return _checkedUnregisteredPackageSources[src];
                         continue;
                     }
@@ -854,8 +1058,16 @@
 
                     var srcLoc = src;
                     var found = false;
-                    foreach (var byLoc in pkgSources.Values.Where(each => each.Location == srcLoc))
+                    foreach (var byLoc in pkgSources.Values)
                     {
+                        // srcLoc does not match byLoc.Location, try to check for srcLoc with "/" appended at the end
+                        if (!string.Equals(byLoc.Location, srcLoc, StringComparison.OrdinalIgnoreCase)
+                            && !string.Equals(byLoc.Location, string.Concat(srcLoc, "/"), StringComparison.OrdinalIgnoreCase)
+                            && !string.Equals(string.Concat(byLoc.Location, "/"), srcLoc, StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
                         _checkedUnregisteredPackageSources.Add(srcLoc, byLoc);
                         yield return byLoc;
                         found = true;
@@ -886,7 +1098,7 @@
                             {
                                 Debug(Resources.Messages.SuccessfullyValidated, src);
 
-                                PackageSource newSource = new PackageSource
+                                yield return new PackageSource
                                     {
                                         Request = this,
                                         Location = srcUri.ToString(),
@@ -895,8 +1107,6 @@
                                         IsRegistered = false,
                                         IsValidated = isValidated,
                                     };
-                                _checkedUnregisteredPackageSources.Add(src, newSource);
-                                yield return newSource;
                                 continue;
                             }
                             Warning(Constants.Messages.UnableToResolveSource, src);
@@ -1062,6 +1272,7 @@
                             {
                                 // get the packageSources node
                                 var packageSources = configuration.ElementsNoNamespace("packageSources").FirstOrDefault();
+
                                 if (packageSources != null)
                                 {
                                     _registeredPackageSources = packageSources.Elements("add")
@@ -1076,6 +1287,7 @@
                                                 IsRegistered = true,
                                                 IsValidated = each.Attribute("validated") != null && each.Attribute("validated").Value.IsTrue(),
                                             }, StringComparer.OrdinalIgnoreCase);
+
                                 }
                             }
                         }
@@ -1092,7 +1304,7 @@
 
         private IEnumerable<PackageItem> GetPackageById(PackageSource source, 
             string name,
-            Request request, 
+            NuGetRequest request, 
             string requiredVersion = null, 
             string minimumVersion = null, 
             string maximumVersion = null,
@@ -1100,6 +1312,12 @@
             bool maxInclusive = true) {
             try {
                 Debug(Resources.Messages.DebugInfoCallMethod3, "NuGetRequest", "GetPackageById", name);
+
+                // source should be attached to a repository
+                if (source.Repository == null)
+                {
+                    return Enumerable.Empty<PackageItem>();
+                }
 
                 // otherwise fall back to traditional behavior
                 var pkgs = source.Repository.FindPackagesById(name, request);
@@ -1115,6 +1333,7 @@
                     //Display versions from lastest to oldest
                     pkgs = (from p in pkgs select p).OrderByDescending(x => x.Version);
                 }
+
 
                 //A user does not provide version info, we choose the latest
                 if (!AllVersions.Value && (String.IsNullOrWhiteSpace(requiredVersion) && String.IsNullOrWhiteSpace(minimumVersion) && String.IsNullOrWhiteSpace(maximumVersion)))
@@ -1204,8 +1423,8 @@
                 }
 
                 // this is an URI, and it looks like one type that we support
-                if (SkipValidate.Value || PathUtility.ValidateSourceUri(SupportedSchemes, uri, this)) {
-                    return new PackageSource {
+                if (SkipValidate.Value || PathUtility.ValidateSourceUri(SupportedSchemes, uri, this)) {                    
+                    var uriSource = new PackageSource {
                         Request = this,
                         IsRegistered = false,
                         IsValidated = !SkipValidate.Value,
@@ -1213,10 +1432,55 @@
                         Name = nameOrLocation,
                         Trusted = false,
                     };
+
+                    return uriSource;
                 }
             }
 
             WriteError(ErrorCategory.InvalidArgument, nameOrLocation, Constants.Messages.UnableToResolveSource, nameOrLocation);
+            return null;
+        }
+
+        internal static string SecureStringToString(SecureString secure)
+        {
+            IntPtr value = IntPtr.Zero;
+            try
+            {
+#if !CORECLR
+                value = Marshal.SecureStringToCoTaskMemUnicode(secure);
+#else
+                value = SecureStringMarshal.SecureStringToCoTaskMemUnicode(secure);
+#endif
+                return Marshal.PtrToStringUni(value);
+            }
+            finally
+            {
+#if !CORECLR
+                Marshal.ZeroFreeGlobalAllocUnicode(value);
+#else
+                SecureStringMarshal.ZeroFreeCoTaskMemUnicode(value);
+#endif
+            }
+        }
+
+        /// <summary>
+        /// Returns network credential based on credential given from request
+        /// </summary>
+        /// <returns></returns>
+        internal NetworkCredential GetNetworkCredential()
+        {
+            // if request has username and password, use that
+            if (!string.IsNullOrWhiteSpace(CredentialUsername) && CredentialPassword != null)
+            {
+#if CORECLR
+                // networkcredential class on coreclr does not accept securestring so we have to convert
+                return new NetworkCredential(CredentialUsername, SecureStringToString(CredentialPassword));
+#else
+                return new NetworkCredential(CredentialUsername, CredentialPassword);
+#endif
+            }
+
+            // if no user name and password, returns null
             return null;
         }
 
@@ -1307,7 +1571,18 @@
 
             //Tags should be performed as *AND* intead of *OR"
             //For example -FilterOnTag:{ "A", "B"}, the returned package should have both A and B.
-            return pkgs.Where(each => FilterOnTag.Value.All(tag => each.Tags != null && each.Tags.IndexOf(tag, StringComparison.OrdinalIgnoreCase) > -1));
+            return pkgs.Where(pkg => FilterOnTag.Value.All(
+                tagFromUser =>
+                {
+                    if (string.IsNullOrWhiteSpace(pkg.Tags))
+                    {
+                        // return all packages if a package has no tags.
+                        return true;
+                    }
+                    var tagArray = pkg.Tags.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    return tagArray.Any(tagFromPackage => tagFromPackage.EqualsIgnoreCase(tagFromUser));
+                }
+                ));
         }
 
         private IEnumerable<IPackage> FilterOnContains(IEnumerable<IPackage> pkgs) {
@@ -1337,6 +1612,12 @@
             try 
             {
                 Debug(Resources.Messages.DebugInfoCallMethod3, "NuGetRequest", "SearchForPackages", name);
+
+                // no repository found then returns nothing
+                if (source.Repository == null)
+                {
+                    return Enumerable.Empty<PackageItem>();
+                }
 
                 var isNameContainsWildCard = false;
                 var searchTerm = Contains.Value ?? string.Empty;

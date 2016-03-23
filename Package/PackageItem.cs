@@ -52,8 +52,8 @@
                             //     jQuery.nuspec
                             //dirName = jQuery.2.1.4
                             //name = jQuery
-                            //Use Contains instead of Equal below
-                            if (!string.IsNullOrEmpty(name) && dirName.Contains(name) && Directory.Exists(dir))
+                            //conduct case insensitive comparison between name and dirName                           
+                            if (!string.IsNullOrEmpty(name) && (dirName.IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0) && Directory.Exists(dir))
                             {
                                 return dir;
                             }

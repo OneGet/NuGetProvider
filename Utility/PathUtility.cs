@@ -8,8 +8,11 @@ namespace Microsoft.PackageManagement.NuGetProvider
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Http.Headers;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Runtime.InteropServices;
 
     internal static class PathUtility
     {
@@ -57,7 +60,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             return Path.GetExtension(path).Equals(NuGetConstant.PackageExtension, StringComparison.OrdinalIgnoreCase);
         }
 
-        internal static bool ValidateSourceUri(IEnumerable<string> supportedSchemes, Uri srcUri, Request request)
+        internal static bool ValidateSourceUri(IEnumerable<string> supportedSchemes, Uri srcUri, NuGetRequest request)
         {
 
             if (!supportedSchemes.Contains(srcUri.Scheme.ToLowerInvariant()))
@@ -129,9 +132,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <param name="query"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        internal static Uri ValidateUri(Uri query, Request request)
+        internal static Uri ValidateUri(Uri query, NuGetRequest request)
         {
-            var client = new HttpClient(new HttpClientHandler() { UseDefaultCredentials = true });
+            var client = request.ClientWithoutAcceptHeader;
 
             var response = GetHttpResponse(client, query.AbsoluteUri, request);
 
@@ -191,5 +194,93 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
             return query.TrimEnd('/') + "/" + append.TrimStart('/');
         }
+
+#region CryptProtectData
+        //internal struct DATA_BLOB
+        //{
+        //    public int cbData;
+        //    public IntPtr pbData;
+        //}
+
+        //internal static void CopyByteToBlob(ref DATA_BLOB blob, byte[] data)
+        //{
+        //    blob.pbData = Marshal.AllocHGlobal(data.Length);
+
+        //    blob.cbData = data.Length;
+
+        //    Marshal.Copy(data, 0, blob.pbData, data.Length);
+        //}
+
+        //internal const uint CRYPTPROTECT_UI_FORBIDDEN = 0x1;
+
+        //[DllImport("crypt32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        //private static extern bool CryptUnprotectData(ref DATA_BLOB pDataIn, ref string ppszDataDescr, ref DATA_BLOB pOptionalEntropy,
+        //    IntPtr pvReserved, IntPtr pPromptStruct, uint dwFlags, ref DATA_BLOB pDataOut);
+
+        //[DllImport("crypt32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        //private static extern bool CryptProtectData(ref DATA_BLOB pDataIn, string szDataDescr, ref DATA_BLOB pOptionalEntropy,
+        //    IntPtr pvReserved, IntPtr pPromptStruct, uint dwFlags, ref DATA_BLOB pDataOut);
+
+        //public static byte[] CryptProtect(byte[] dataIn, byte[] optionalEntropy, bool encryptionOperation)
+        //{
+        //    DATA_BLOB dataInBlob = new DATA_BLOB();
+        //    DATA_BLOB optionalEntropyBlob = new DATA_BLOB();
+        //    DATA_BLOB resultBlob = new DATA_BLOB();
+        //    string description = String.Empty;
+
+        //    try
+        //    {
+        //        // copy the encrypted blob
+        //        CopyByteToBlob(ref dataInBlob, dataIn);
+        //        CopyByteToBlob(ref optionalEntropyBlob, optionalEntropy);
+
+        //        // use local user
+        //        uint flags = CRYPTPROTECT_UI_FORBIDDEN;
+
+        //        bool success = false;
+
+        //        // doing decryption
+        //        if (!encryptionOperation)
+        //        {
+        //            // call win32 api
+        //            success = CryptUnprotectData(ref dataInBlob, ref description, ref optionalEntropyBlob, IntPtr.Zero, IntPtr.Zero, flags, ref resultBlob);
+        //        }
+        //        else
+        //        {
+        //            // doing encryption
+        //            success = CryptProtectData(ref dataInBlob, description, ref optionalEntropyBlob, IntPtr.Zero, IntPtr.Zero, flags, ref resultBlob);
+        //        }
+
+        //        if (!success)
+        //        {
+        //            throw new Win32Exception(Marshal.GetLastWin32Error());
+        //        }
+
+        //        byte[] unencryptedBytes = new byte[resultBlob.cbData];
+
+        //        Marshal.Copy(resultBlob.pbData, unencryptedBytes, 0, resultBlob.cbData);
+
+        //        return unencryptedBytes;
+        //    }
+        //    finally
+        //    {
+        //        // free memory
+        //        if (dataInBlob.pbData != IntPtr.Zero)
+        //        {
+        //            Marshal.FreeHGlobal(dataInBlob.pbData);
+        //        }
+
+        //        if (optionalEntropyBlob.pbData != IntPtr.Zero)
+        //        {
+        //            Marshal.FreeHGlobal(optionalEntropyBlob.pbData);
+        //        }
+
+        //        if (resultBlob.pbData != IntPtr.Zero)
+        //        {
+        //            Marshal.FreeHGlobal(resultBlob.pbData);
+        //        }
+        //    }
+        //}
+#endregion
     }
 }

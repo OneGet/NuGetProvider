@@ -2,6 +2,7 @@
 namespace Microsoft.PackageManagement.NuGetProvider 
 {
     using System;
+    using System.Net;
     using System.IO;
 
     internal class PackageSource
@@ -20,7 +21,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
         internal bool IsValidated { get; set; }
 
-        internal Request Request { get; set; }
+        internal NuGetRequest Request { get; set; }
 
         internal IPackageRepository Repository
         {

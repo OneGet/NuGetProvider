@@ -161,6 +161,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
         public abstract string AddTagId(string tagId);
 
+        public abstract string AddCulture(string xmlLang);
+
         public abstract string AddMeta(string elementPath);
 
         public abstract string AddEntity(string name, string regid, string role, string thumbprint);

@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.PackageManagement.NuGetProvider 
 {
     using System;
+    using System.Net;
 
     public class PackageRepositoryFactory : IPackageRepositoryFactory
     {
@@ -11,7 +12,7 @@
             get { return _default;}
         }
 
-        public virtual IPackageRepository CreateRepository(string packageSource, Request request)
+        public virtual IPackageRepository CreateRepository(string packageSource, NuGetRequest request)
         {
             if (packageSource == null)
             {

@@ -1,7 +1,8 @@
 ﻿namespace Microsoft.PackageManagement.NuGetProvider 
 {
+
     public interface IPackageRepositoryFactory
     {
-        IPackageRepository CreateRepository(string packageSource, Request request);
+        IPackageRepository CreateRepository(string packageSource, NuGetRequest request);
     }
 }

@@ -10,6 +10,7 @@
     using System.Linq;
     using System.Xml.Linq;
     using System.IO.Compression;
+    using System.Net;
     using System.Security.Cryptography;
 
     /// <summary>
@@ -23,7 +24,7 @@
         /// <param name="query">A full Uri. A sample Uri looks like "http://www.nuget.org/api/v2/FindPackagesById()?id='Jquery'" </param>
         /// <param name="request">An object passed in from the PackageManagement that contains functions that can be used to interact with its Provider</param> 
         /// <returns>Package objects</returns>
-        internal static IEnumerable<PackageBase> FindPackage(string query, Request request) {
+        internal static IEnumerable<PackageBase> FindPackage(string query, NuGetRequest request) {
             request.Debug(Messages.DebugInfoCallMethod, "NuGetClient", "FindPackage");
 
             request.Verbose(Messages.SearchingRepository, query, "");
@@ -89,7 +90,7 @@
                 installFullPath = Path.Combine(installDir, fileName);
 
                 //download to fetch the package
-                DownloadPackage(packageName, version, installFullPath, queryUrl, request);
+                DownloadPackage(packageName, version, installFullPath, queryUrl, request, source);
 
                 // check that we have the file
                 if (!File.Exists(installFullPath))
@@ -207,6 +208,11 @@
         {
             PackageItem packageToBeInstalled;
 
+            if (pkgItem == null || pkgItem.PackageSource == null || pkgItem.PackageSource.Repository == null)
+            {
+                return false;
+            }
+
             // If the source location exists as a directory then we try to get the file location and provide to the packagelocal
             if (Directory.Exists(pkgItem.PackageSource.Location))
             {
@@ -292,6 +298,12 @@
             
             try
             {
+                // if no repository, we can't do anything
+                if (pkgItem.PackageSource.Repository == null)
+                {
+                    return false;
+                }
+
                 if (pkgItem.PackageSource.Repository.IsFile)
                 {
                     using (var input = File.OpenRead(pkgItem.Package.FullFilePath))
@@ -310,7 +322,7 @@
                     string httpquery = PathUtility.UriCombine(pkgItem.PackageSource.Repository.Source, append);
 
                     NuGetClient.DownloadPackage(pkgItem.Id, pkgItem.Version, destLocation,
-                        string.IsNullOrWhiteSpace(pkgItem.Package.ContentSrcUrl) ? httpquery : pkgItem.Package.ContentSrcUrl, request);
+                        string.IsNullOrWhiteSpace(pkgItem.Package.ContentSrcUrl) ? httpquery : pkgItem.Package.ContentSrcUrl, request, pkgItem.PackageSource);
                 }
             }
             catch (Exception ex)
@@ -702,9 +714,11 @@
         /// <param name="destination">Destination location to store the downloaded package</param>
         /// <param name="queryUrl">Uri to query the package</param>
         /// <param name="request">An object passed in from the PackageManagement platform that contains APIs that can be used to interact with it </param>   
-        internal static void DownloadPackage(string packageName, string version, string destination, string queryUrl, NuGetRequest request) 
+        /// <param name="pkgSource">source to download the package</param>
+        /// 
+        internal static void DownloadPackage(string packageName, string version, string destination, string queryUrl, NuGetRequest request, PackageSource pkgSource) 
         {
-            try {
+            try {                
                 request.Verbose(string.Format(CultureInfo.InvariantCulture, "DownloadPackage' - name='{0}', version='{1}',destination='{2}', uri='{3}'", packageName, version, destination, queryUrl));
 
                 if (new Uri(queryUrl).IsFile) {
@@ -716,7 +730,7 @@
                 // Do not need to validate here again because the job is done by the httprepository that supplies the queryurl
                 //Downloading the package
                 //request.Verbose(httpquery);
-                result = DownloadDataToFileAsync(destination, queryUrl, request).Result;                   
+                result = DownloadDataToFileAsync(destination, queryUrl, request, request.GetNetworkCredential()).Result;                   
 
                 if (result == 0 || !File.Exists(destination))
                 {
@@ -730,46 +744,6 @@
                 request.Warning(Constants.Messages.PackageFailedInstallOrDownload, packageName, CultureInfo.CurrentCulture.TextInfo.ToLower(Constants.Download));
                 throw;
             }
-        }
-
-        /// <summary>
-        /// Returns a httpclient with the headers set.
-        /// </summary>
-        /// <returns></returns>
-        private static HttpClient GetHttpClient(Request request) {
-            HttpClient client = new HttpClient(new HttpClientHandler() { UseDefaultCredentials = true });
-            client.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Charset", "UTF-8");
-            // Request for gzip and deflate encoding to make the response lighter.
-            client.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Encoding", "gzip,deflate");
-            client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "NuGet");
-
-            if (request is NuGetRequest)
-            {
-                var nuGetRequest = request as NuGetRequest;
-                if (nuGetRequest != null && nuGetRequest.Headers != null)
-                {
-                    foreach (var header in nuGetRequest.Headers.Value)
-                    {
-                        // header is in the format "A=B" because OneGet doesn't support Dictionary parameters
-                        if (!String.IsNullOrEmpty(header))
-                        {
-                            var headerSplit = header.Split(new string[] { "=" }, 2, StringSplitOptions.RemoveEmptyEntries);
-
-                            // ignore wrong entries
-                            if (headerSplit.Count() == 2)
-                            {
-                                client.DefaultRequestHeaders.TryAddWithoutValidation(headerSplit[0], headerSplit[1]);
-                            }
-                            else
-                            {
-                                request.Warning(Messages.HeaderIgnored, header);
-                            }
-                        }
-                    }
-                }
-            }
-
-            return client;
         }
 
         /// <summary>
@@ -794,17 +768,19 @@
             return result;
         }
 
+
+
         /// <summary>
         /// Download data from remote via uri query.
         /// </summary>
         /// <param name="query">Uri query</param>
-        /// <param name="request">An object passed in from the PackageManagement platform that contains APIs that can be used to interact with it </param>   
+        /// <param name="request">An object passed in from the PackageManagement platform that contains APIs that can be used to interact with it </param>
         /// <returns></returns>
-        internal static Stream DownloadDataToStream(string query, Request request)
+        internal static Stream DownloadDataToStream(string query, NuGetRequest request)
         {
             request.Debug(Messages.DownloadingPackage, query);
 
-            var client = GetHttpClient(request);
+            var client = request.Client;
 
             var response = PathUtility.GetHttpResponse(client, query, request);
 
@@ -834,12 +810,12 @@
         /// <param name="bufferSize"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        internal static Stream InitialDownloadDataToStream(UriBuilder query, int startPoint, int bufferSize, Request request)
+        internal static Stream InitialDownloadDataToStream(UriBuilder query, int startPoint, int bufferSize, NuGetRequest request)
         {
             var uri = String.Format(CultureInfo.CurrentCulture, query.Uri.ToString(), startPoint, bufferSize);
             request.Debug(Messages.DownloadingPackage, uri);
 
-            var client = GetHttpClient(request);
+            var client = request.Client;
 
             var response = PathUtility.GetHttpResponse(client, uri, request);
 
@@ -870,12 +846,13 @@
         /// <param name="fileName">A file to store the downloaded data.</param>
         /// <param name="query">Uri query</param>
         /// <param name="request">An object passed in from the PackageManagement platform that contains APIs that can be used to interact with it </param>   
+        /// <param name="networkCredential">Credential to pass along to get httpclient</param>
         /// <returns></returns>
-        internal static async Task<long> DownloadDataToFileAsync(string fileName, string query, NuGetRequest request)
+        internal static async Task<long> DownloadDataToFileAsync(string fileName, string query, NuGetRequest request, NetworkCredential networkCredential)
         {
             request.Verbose(Messages.DownloadingPackage, query);
 
-            var client = GetHttpClient(request);
+            var client = request.Client;
 
             var response = PathUtility.GetHttpResponse(client, query, request);
 

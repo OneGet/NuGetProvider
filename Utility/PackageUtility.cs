@@ -180,16 +180,16 @@
                     package.IsAbsoluteLatestVersion = Convert.ToBoolean(value, CultureInfo.InvariantCulture);
                     break;
                 case "published":
-                    package.Published = string.IsNullOrWhiteSpace(value) ? (null as DateTimeOffset?) : Convert.ToDateTime(value, CultureInfo.InvariantCulture);
+                    package.Published = GetDateTime(value);
                     break;
                 case "created":
-                    package.Created = string.IsNullOrWhiteSpace(value) ? (null as DateTimeOffset?) : Convert.ToDateTime(value, CultureInfo.InvariantCulture);
+                    package.Created = GetDateTime(value);
                     break;
                 case "lastupdated":
-                    package.LastUpdated = string.IsNullOrWhiteSpace(value) ? (null as DateTimeOffset?) : Convert.ToDateTime(value, CultureInfo.InvariantCulture);
+                    package.LastUpdated = GetDateTime(value);
                     break;
                 case "lastedited":
-                    package.LastEdited = string.IsNullOrWhiteSpace(value) ? (null as DateTimeOffset?) : Convert.ToDateTime(value, CultureInfo.InvariantCulture);
+                    package.LastEdited = GetDateTime(value);
                     break;
                 case "licensereporturl":
                     package.LicenseReportUrl = string.IsNullOrWhiteSpace(value) ? null : new Uri(value);
@@ -239,6 +239,25 @@
                         package.AdditionalProperties.AddOrSet(element.Name.LocalName, value);
                     }
                     break;
+            }
+        }
+
+        internal static DateTimeOffset? GetDateTime(string dateTime)
+        {
+            if (string.IsNullOrWhiteSpace(dateTime))
+            {
+                return null as DateTimeOffset?;
+            }
+
+            DateTime result;
+
+            if (DateTime.TryParse(dateTime, out result))
+            {
+                return result;
+            }
+            else
+            {
+                return null as DateTimeOffset?;
             }
         }
 
@@ -648,7 +667,10 @@
                 throw new ArgumentNullException("nupkgPath");
             }
 
-            using (FileStream zipToOpen = new FileStream(nupkgPath, FileMode.Open))
+            // We set FileAccess.Read here to ensure a user only needs tne read access permission for find packages.
+            // By default, FileStream needs ReadWrite access that’s why 
+            // System.UnauthorizedAccessException is thrown if a user does not have write access.
+            using (FileStream zipToOpen = new FileStream(nupkgPath, FileMode.Open, FileAccess.Read))
             {
                 using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Read))
                 {

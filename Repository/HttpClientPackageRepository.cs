@@ -1,5 +1,6 @@
 ﻿namespace Microsoft.PackageManagement.NuGetProvider  {
     using System;
+    using System.Net;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -8,6 +9,7 @@
     using Resources;
     using System.Collections.Concurrent;
     using System.Globalization;
+    using System.Security;
 
     /// <summary>
     /// Package repository for downloading data from remote galleries
@@ -22,7 +24,7 @@
         /// </summary>
         /// <param name="request">The nuget request object</param>
         /// <param name="queryUrl">Packagesource location</param>
-        internal HttpClientPackageRepository(string queryUrl, Request request) 
+        internal HttpClientPackageRepository(string queryUrl, NuGetRequest request) 
         {
             // Validate the url
 
@@ -82,7 +84,7 @@
         /// <param name="version">package version</param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public IPackage FindPackage(string packageId, SemanticVersion version, Request request) 
+        public IPackage FindPackage(string packageId, SemanticVersion version, NuGetRequest request) 
         {
             if (string.IsNullOrWhiteSpace(packageId)) {
                 return null;
@@ -107,7 +109,7 @@
         /// <param name="packageId">Package Id</param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public IEnumerable<IPackage> FindPackagesById(string packageId, Request request){
+        public IEnumerable<IPackage> FindPackagesById(string packageId, NuGetRequest request){
 
             request.Debug(Messages.DebugInfoCallMethod3, "HttpClientPackageRepository", "FindPackagesById", packageId);
 
@@ -122,12 +124,10 @@
         /// Search the entire repository for the case when a user does not provider package name or uses wildcards in the name.
         /// </summary>
         /// <param name="searchTerm"></param>
-        /// <param name="request"></param>
+        /// <param name="nugetRequest"></param>
         /// <returns></returns>
-        public IEnumerable<IPackage> Search(string searchTerm, Request request)
+        public IEnumerable<IPackage> Search(string searchTerm, NuGetRequest nugetRequest)
         {
-            var nugetRequest = request as NuGetRequest;
-
             if (nugetRequest == null)
             {
                 yield break;
@@ -137,7 +137,7 @@
 
             var searchQuery = searchTerm.MakeSearchQuery(_queryUri, nugetRequest.AllowPrereleaseVersions.Value, nugetRequest.AllVersions.Value);
 
-            foreach (var pkg in SendRequest(searchQuery, request))
+            foreach (var pkg in SendRequest(searchQuery, nugetRequest))
             {
                 yield return pkg;
             }
@@ -150,7 +150,7 @@
         /// <param name="query"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static IEnumerable<PackageBase> SendRequest(string query, Request request)
+        public static IEnumerable<PackageBase> SendRequest(string query, NuGetRequest request)
         {
             const int bufferSize = 40;
             // number of threads sending the requests

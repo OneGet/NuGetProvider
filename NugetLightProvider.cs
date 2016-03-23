@@ -120,12 +120,19 @@
                 throw new ArgumentNullException("request");
             }
 
+            if (category == null)
+            {
+                request.Warning(Resources.Messages.UnkownCategory, PackageProviderName, "GetDynamicOptions", category);
+                return;
+            }
+
             switch ((category ?? string.Empty).ToLowerInvariant()) {
                 case "install":
                     // put any options required for install/uninstall/getinstalledpackages
 
-                    request.YieldDynamicOption("Destination", Constants.OptionType.Folder, true);
+                    request.YieldDynamicOption("Destination", Constants.OptionType.Folder, false);
                     request.YieldDynamicOption("ExcludeVersion", Constants.OptionType.Switch, false);
+                    request.YieldDynamicOption("Scope", Constants.OptionType.String, false, new[] { Constants.CurrentUser, Constants.AllUsers });
                     //request.YieldDynamicOption("SkipDependencies", Constants.OptionType.Switch, false);
                     //request.YieldDynamicOption("ContinueOnFailure", Constants.OptionType.Switch, false);
                     break;

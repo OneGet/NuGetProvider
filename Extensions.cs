@@ -206,6 +206,22 @@
                 Array.Clear(data, 0, data.Length);
             }
         }
+
+        internal static bool EqualsIgnoreCase(this string str, string str2)
+        {
+            if (str == null && str2 == null)
+            {
+                return true;
+            }
+
+            if (str == null || str2 == null)
+            {
+                return false;
+            }
+
+            return str.Equals(str2, StringComparison.OrdinalIgnoreCase);
+        }
+
     }
         
     internal static class LinqExtensions
