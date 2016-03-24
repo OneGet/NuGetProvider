@@ -45,14 +45,4 @@ before_build:
     set-content $filepath $content
 build:
   verbosity: minimal
-after_build:
-- ps: >-
-    $buildversion = New-Object System.Version($env:APPVEYOR_BUILD_VERSION)
-
-    $version = New-Object System.Version($buildversion.Major, $buildversion.Minor, $buildversion.Build, ($buildversion.Revision - 18))
-
-
-    Move-Item .\output\v45\Release\bin\Microsoft.PackageManagement.NuGetProvider.dll ".\output\v45\Release\bin\Microsoft.PackageManagement.NuGetProvider-$version.dll"
-
-    Get-ChildItem .\output\v45\Release\bin\*-$version.dll | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName releasebits -Type Auto }
 deploy: off
