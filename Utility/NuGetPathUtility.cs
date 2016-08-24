@@ -1,5 +1,7 @@
 ﻿
-namespace Microsoft.PackageManagement.NuGetProvider 
+using Microsoft.PackageManagement.Provider.Utility;
+
+namespace Microsoft.PackageManagement.NuGetProvider
 {
     using System;
     using System.Collections.Generic;
@@ -14,32 +16,11 @@ namespace Microsoft.PackageManagement.NuGetProvider
     using System.Threading.Tasks;
     using System.Runtime.InteropServices;
 
-    internal static class PathUtility
+    internal static class NuGetPathUtility
     {
         private static readonly char[] _invalidPathChars = Path.GetInvalidPathChars();
 
-        internal static string EnsureTrailingSlash(string path)
-        {
-            //The value of DirectorySeparatorChar is a slash ("/") on UNIX, and a backslash ("\") on the Windows and Macintosh.
-            return EnsureTrailingCharacter(path, Path.DirectorySeparatorChar);
-        }
-
-        private static string EnsureTrailingCharacter(string path, char trailingCharacter)
-        {
-            if (path == null)
-            {
-                throw new ArgumentNullException("path");
-            }
-
-            // if the path is empty, we want to return the original string instead of a single trailing character.
-            if (path.Length == 0 || path[path.Length - 1] == trailingCharacter)
-            {
-                return path;
-            }
-           
-            return path + trailingCharacter;
-        }
-
+        
         internal static bool IsManifest(string path)
         {
             if (string.IsNullOrWhiteSpace(path))
@@ -82,50 +63,6 @@ namespace Microsoft.PackageManagement.NuGetProvider
             return ValidateUri(srcUri, request) != null;
         }
 
-        internal static HttpResponseMessage GetHttpResponse(HttpClient httpClient, string query, Request request)
-        {
-            var cts = new CancellationTokenSource();
-
-            Timer timer = null;
-
-            try
-            {
-                Task task = httpClient.GetAsync(query, cts.Token);
-
-                // check every second to see whether request is cancelled
-                timer = new Timer(_ =>
-                    {
-                        if (request.IsCanceled)
-                        {
-                            cts.Cancel();
-                        }
-                    },
-                    null, 0, 1000);                
-                
-                // start the task
-                task.Wait();
-
-                if (task.IsCompleted && task is Task<HttpResponseMessage>)
-                {
-                    return (task as Task<HttpResponseMessage>).Result;
-                }
-            }
-            finally
-            {
-                // dispose the token
-                cts.Dispose();
-                if (timer != null)
-                {
-                    // stop timer
-                    timer.Change(Timeout.Infinite, Timeout.Infinite);
-                    // dispose it
-                    timer.Dispose();
-                }
-            }
-
-            return null;
-        }
-
         /// <summary>
         /// Returns the validated uri. Returns null if we cannot validate it
         /// </summary>
@@ -136,7 +73,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
         {
             var client = request.ClientWithoutAcceptHeader;
 
-            var response = GetHttpResponse(client, query.AbsoluteUri, request);
+            var response = PathUtility.GetHttpResponse(client, query.AbsoluteUri, (() => request.IsCanceled),
+                ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg));
 
             if (response == null)
             {
@@ -176,7 +114,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
             //'FoooBarr' is an any random package id
             string queryUri = "FoooBarr".MakeFindPackageByIdQuery(PathUtility.UriCombine(query.AbsoluteUri, NuGetConstant.FindPackagesById));
 
-            response = GetHttpResponse(client, queryUri, request);
+            response = PathUtility.GetHttpResponse(client, queryUri, (() => request.IsCanceled),
+                ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg));
+
 
             // The link is not valid
             if (response == null || !response.IsSuccessStatusCode)
@@ -185,14 +125,6 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
 
             return query;
-        }
-
-        internal static string UriCombine(string query, string append)
-        {
-            if (String.IsNullOrWhiteSpace(query)) return append;
-            if (String.IsNullOrWhiteSpace(append)) return query;
-
-            return query.TrimEnd('/') + "/" + append.TrimStart('/');
         }
 
 #region CryptProtectData

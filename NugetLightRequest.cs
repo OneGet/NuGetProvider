@@ -12,11 +12,15 @@
     using System.Xml;
     using System.Xml.Linq;
     using System.Collections.Concurrent;
+    using System.Diagnostics.CodeAnalysis;
     using Resources;
     using System.Security.Cryptography;
     using System.Security;
     using System.Runtime.InteropServices;
     using System.Net;
+    using Microsoft.PackageManagement.Provider.Utility;
+
+    using SemanticVersion = Microsoft.PackageManagement.Provider.Utility.SemanticVersion;
 
     /// <summary> 
     /// This class drives the Request class that is an interface exposed from the PackageManagement Platform to the provider to use.
@@ -34,7 +38,7 @@
         internal readonly Lazy<string[]> FilterOnTag;
         internal readonly Lazy<string[]> Headers;
         internal readonly Lazy<string> Scope;
-
+        internal readonly Lazy<PackageBase[]> InstalledPackages;
 
         private static IDictionary<string, PackageSource> _registeredPackageSources;
         private static IDictionary<string, PackageSource> _checkedUnregisteredPackageSources = new ConcurrentDictionary<string, PackageSource>();
@@ -73,6 +77,52 @@
             //FindByCanonicalId = new ImplictLazy<bool>(() => GetOptionValue("FindByCanonicalId").IsTrue());
 
             Headers = new Lazy<string[]>(() => (GetOptionValues("Headers") ?? new string[0]).ToArray());
+            InstalledPackages = new Lazy<PackageBase[]>(() => (GetInstalledPackagesOptionValue()).ToArray());
+        }
+
+        // parse the list of installed packages
+        private IEnumerable<PackageBase> GetInstalledPackagesOptionValue()
+        {
+            // get possible installed packages
+            var installedPackages = GetOptionValues("InstalledPackages") ?? new string[0];
+
+            // parse the installed package options passed in
+            foreach (var installedPackage in installedPackages)
+            {
+                // we assume that the name passed in is something like jquery#1.2.5
+                string[] nameAndVersion = installedPackage.Split(new[] { "!#!" }, StringSplitOptions.None);
+
+                var package = new PackageBase();
+
+                // only name passed in, no version
+                if (nameAndVersion.Count() == 1)
+                {
+                    package.Id = nameAndVersion[0];
+                    yield return package;
+                }
+                else if (nameAndVersion.Count() == 2)
+                {
+                    // this means there is version
+                    SemanticVersion semVers = null;
+
+                    try
+                    {
+                        // convert version to semvers
+                        semVers = new SemanticVersion(nameAndVersion[1]);
+                    }
+                    catch
+                    {
+                        // not a valid version, ignores this entry
+                        continue;
+                    }
+
+                    // set name and version of this installed packages
+                    package.Id = nameAndVersion[0];
+                    package.Version = semVers.Version.ToStringSafe();
+
+                    yield return package;
+                }
+            }
         }
 
         /// <summary>
@@ -123,6 +173,10 @@
                 // or  $env:programfiles\NuGet\Packages\  if you are an admin.
                 try
                 {
+#if UNIX
+                    // there is only 1 installation location by default for linux ("HOME/.local/share/powershell/PackageManagement/NuGet/Packages")
+                    string basePath = CurrentUserDefaultInstallLocation;
+#else
                     var scope = (Scope == null) ? null : Scope.Value;
                     scope = string.IsNullOrWhiteSpace(scope) ? Constants.AllUsers : scope;
                     string basePath;
@@ -144,6 +198,7 @@
                             Constants.Messages.InstallRequiresCurrentUserScopeParameterForNonAdminUser, AllUserDefaultInstallLocation, CurrentUserDefaultInstallLocation);
                         return string.Empty;
                     }
+#endif
 
                     if (!Directory.Exists(basePath))
                     {
@@ -167,9 +222,13 @@
             get
             {
 #if CORECLR
-                return Path.Combine(Environment.GetEnvironmentVariable("UserProfile"), "NuGet", "Packages"); 
+#if UNIX
+                return Path.Combine(Path.GetDirectoryName(Platform.SelectProductNameForDirectory(Platform.XDG_Type.DATA)), "PackageManagement", "NuGet", "Packages");
 #else
-                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "NuGet", "Packages");
+                return Path.Combine(Environment.GetEnvironmentVariable("LocalAppData"), "PackageManagement", "NuGet", "Packages"); 
+#endif
+#else
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PackageManagement", "NuGet", "Packages");
 #endif
             }
         
@@ -180,7 +239,11 @@
             get
             {
 #if CORECLR
+#if UNIX
+                return Path.Combine(Path.GetDirectoryName(Platform.SelectProductNameForDirectory(Platform.XDG_Type.DATA)), "PackageManagement", "NuGet", "Packages");
+#else
                 return Path.Combine(Environment.GetEnvironmentVariable("ProgramFiles"), "NuGet", "Packages"); 
+#endif
 #else
                 return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "NuGet", "Packages");
 #endif
@@ -243,11 +306,11 @@
             PackageBase package = null;
             try {
 
-                if (PathUtility.IsManifest(filePath)) {
+                if (NuGetPathUtility.IsManifest(filePath)) {
                     //.nuspec 
                     package = PackageUtility.ProcessNuspec(filePath);
 
-                } else if (PathUtility.IsPackageFile(filePath)) {
+                } else if (NuGetPathUtility.IsPackageFile(filePath)) {
                     //.nupkg or .zip
                     //The file name may contains version.  ex: jQuery.2.1.1.nupkg
                     package = PackageUtility.DecompressFile(filePath, packageName);
@@ -465,7 +528,7 @@
             Debug(Resources.Messages.DebugInfoCallMethod3, "NuGetRequest", "ValidateSourceLocation", location);
             //Handling http: or file: cases
             if (Uri.IsWellFormedUriString(location, UriKind.Absolute)) {
-                return PathUtility.ValidateSourceUri(SupportedSchemes, new Uri(location), this);
+                return NuGetPathUtility.ValidateSourceUri(SupportedSchemes, new Uri(location), this);
             }
             try {
                 //UNC or local file
@@ -566,7 +629,7 @@
             {
                 if (_httpClient == null)
                 {
-                    _httpClient = GetHttpClientHelper();
+                    _httpClient = PathUtility.GetHttpClientHelper(CredentialUsername, CredentialPassword, WebProxy);
 
                     _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Charset", "UTF-8");
                     // Request for gzip and deflate encoding to make the response lighter.
@@ -605,40 +668,11 @@
             {
                 if (_httpClientWithoutAcceptHeader == null)
                 {
-                    _httpClientWithoutAcceptHeader = GetHttpClientHelper();
+                    _httpClientWithoutAcceptHeader = PathUtility.GetHttpClientHelper(CredentialUsername, CredentialPassword, WebProxy);
                 }
 
                 return _httpClientWithoutAcceptHeader;
             }
-        }
-
-        private HttpClient GetHttpClientHelper()
-        {
-            var clientHandler = new HttpClientHandler();
-
-            var networkCredential = GetNetworkCredential();
-
-            // if we are given a network credential, use that
-            if (networkCredential != null)
-            {
-                // else use the one given to us
-                clientHandler.Credentials = networkCredential;
-                clientHandler.PreAuthenticate = true;
-            }
-            else
-            {
-                clientHandler.UseDefaultCredentials = true;
-            }
-
-            // do not need to set proxy of httpClient or httpClientHandler because it will use system proxy setting by default
-            // discussion here (https://github.com/dotnet/corefx/issues/7037)
-
-            var httpClient = new HttpClient(clientHandler);
-
-            // Mozilla/5.0 is the general token that says the browser is Mozilla compatible, and is common to almost every browser today.
-            httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 NuGet");
-
-            return httpClient;
         }
 
         /// <summary>
@@ -646,8 +680,9 @@
         /// </summary>
         /// <param name="pkg"></param>
         /// <param name="searchKey"></param>
+        /// <param name="destinationPath"></param>
         /// <returns></returns>
-        internal bool YieldPackage(PackageItem pkg, string searchKey) 
+        internal bool YieldPackage(PackageItem pkg, string searchKey, string destinationPath=null)
         {
             try 
             {
@@ -668,6 +703,19 @@
                     // downlevel machine does not have AddTagId interface in request object so it will return null
                     // hence we can't check it here.
                     AddTagId(MakeTagId(pkg));
+
+                    // if we need to report installation location, add a payload and add directory to that
+                    if (!string.IsNullOrWhiteSpace(destinationPath))
+                    {
+                        string payload = AddPayload();
+
+                        if (string.IsNullOrWhiteSpace(payload))
+                        {
+                            return false;
+                        }
+
+                        AddDirectory(payload, Path.GetFileName(destinationPath), Path.GetDirectoryName(destinationPath), null, true);
+                    }
                     
                     if (AddMetadata(pkg.FastPath, "copyright", pkg.Package.Copyright) == null) {
                         return false;
@@ -833,6 +881,51 @@
             return true;
         }
 
+        internal bool MinAndMaxVersionMatched(SemanticVersion packageVersion, string minimumVersion, string maximumVersion, bool minInclusive, bool maxInclusive)
+        {
+            if (!string.IsNullOrWhiteSpace(minimumVersion))
+            {
+                // Check whether we are checking for min inclusive version
+                if (minInclusive)
+                {
+                    // version too small, not what we are looking for
+                    if (packageVersion < new SemanticVersion(minimumVersion))
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (packageVersion <= new SemanticVersion(minimumVersion))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(maximumVersion))
+            {
+                // Check whether we are checking for max inclusive version
+                if (maxInclusive)
+                {
+                    // version too big, not what we are looking for
+                    if (packageVersion > new SemanticVersion(maximumVersion))
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (packageVersion >= new SemanticVersion(maximumVersion))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Search in the destination of the request to checks whether the package name is installed.
         /// Returns true if at least 1 package is installed
@@ -850,14 +943,16 @@
             try
             {
                 bool found = false;
+                var paths = InstalledPath.Where(Directory.Exists).ToArray();
+
                 // if directory does not exist then just return false
-                if (!InstalledPath.Any(Directory.Exists))
+                if (!paths.Any())
                 {
-                    return found;
+                    return false;
                 }
 
                 // look in the destination directory for directories that contain *.nupkg & .nuspec files.  
-                var subdirs = InstalledPath.SelectMany(Directory.EnumerateDirectories);
+                var subdirs = paths.SelectMany(Directory.EnumerateDirectories);
 
                 foreach (var subdir in subdirs)
                 {
@@ -911,43 +1006,10 @@
                                 }
                                 else
                                 {
-                                    if (!string.IsNullOrWhiteSpace(minimumVersion))
+                                    // if min and max version not matched
+                                    if (!MinAndMaxVersionMatched(pkgItem.Package.Version, minimumVersion, maximumVersion, minInclusive, maxInclusive))
                                     {
-                                        // Check whether we are checking for min inclusive version
-                                        if (minInclusive)
-                                        {
-                                            // version too small, not what we are looking for
-                                            if (pkgItem.Package.Version < new SemanticVersion(minimumVersion))
-                                            {
-                                                continue;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            if (pkgItem.Package.Version <= new SemanticVersion(minimumVersion))
-                                            {
-                                                continue;
-                                            }
-                                        }
-                                    }
-                                    if (!string.IsNullOrWhiteSpace(maximumVersion))
-                                    {
-                                        // Check whether we are checking for max inclusive version
-                                        if (maxInclusive)
-                                        {
-                                            // version too big, not what we are looking for
-                                            if (pkgItem.Package.Version > new SemanticVersion(maximumVersion))
-                                            {
-                                                continue;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            if (pkgItem.Package.Version >= new SemanticVersion(maximumVersion))
-                                            {
-                                                continue;
-                                            }
-                                        }
+                                        continue;
                                     }
 
                                     if (terminateFirstFound)
@@ -1030,6 +1092,8 @@
                     // return them all.
                     foreach (var src in pkgSources.Values) {
                         Debug(src.Name);
+                        // set the request of the registered one to the current request because it may have additional information like credential
+                        src.Request = this;
                         yield return src;
                     }
                     yield break;
@@ -1052,6 +1116,7 @@
                     {
                         Debug(Resources.Messages.FoundRegisteredSource, src, NuGetConstant.ProviderName);
                         _checkedUnregisteredPackageSources.Add(src, pkgSources[src]);
+                        pkgSources[src].Request = this;
                         yield return pkgSources[src];
                         continue;
                     }
@@ -1068,7 +1133,11 @@
                             continue;
                         }
 
-                        _checkedUnregisteredPackageSources.Add(srcLoc, byLoc);
+                        // in this case, do not store the srcLoc into the dictionary, otherwise, the provider may resolve http://www.nuget.org/api/v2 to some source with location
+                        // http://www.nuget.org/api/v2/ and oneget will raise an error (it thinks we are dishonest :()
+                        byLoc.Location = srcLoc;
+                        // set request of byloc to this because this request may have credential information
+                        byLoc.Request = this;
                         yield return byLoc;
                         found = true;
                     }
@@ -1091,7 +1160,13 @@
 
                             if (!SkipValidate.Value)
                             {
-                                isValidated = PathUtility.ValidateSourceUri(SupportedSchemes, srcUri, this);
+                                try{
+                                    isValidated = NuGetPathUtility.ValidateSourceUri(SupportedSchemes, srcUri, this);
+                                }
+                                catch (Exception ex)
+                                {
+                                    ex.Dump(this);
+                                }
                             }
 
                             if (SkipValidate.Value || isValidated)
@@ -1229,7 +1304,11 @@
                         }
 
                     } else {
+#if UNIX
+                        var appdataFolder = Path.GetDirectoryName(Platform.SelectProductNameForDirectory(Platform.XDG_Type.CONFIG));
+#else
                         var appdataFolder = Environment.GetEnvironmentVariable("appdata");
+#endif
                         _configurationFileLocation = Path.Combine(appdataFolder, "NuGet", NuGetConstant.SettingsFileName);
 
                         //create directory if does not exist
@@ -1423,7 +1502,7 @@
                 }
 
                 // this is an URI, and it looks like one type that we support
-                if (SkipValidate.Value || PathUtility.ValidateSourceUri(SupportedSchemes, uri, this)) {                    
+                if (SkipValidate.Value || NuGetPathUtility.ValidateSourceUri(SupportedSchemes, uri, this)) {                    
                     var uriSource = new PackageSource {
                         Request = this,
                         IsRegistered = false,
@@ -1438,49 +1517,6 @@
             }
 
             WriteError(ErrorCategory.InvalidArgument, nameOrLocation, Constants.Messages.UnableToResolveSource, nameOrLocation);
-            return null;
-        }
-
-        internal static string SecureStringToString(SecureString secure)
-        {
-            IntPtr value = IntPtr.Zero;
-            try
-            {
-#if !CORECLR
-                value = Marshal.SecureStringToCoTaskMemUnicode(secure);
-#else
-                value = SecureStringMarshal.SecureStringToCoTaskMemUnicode(secure);
-#endif
-                return Marshal.PtrToStringUni(value);
-            }
-            finally
-            {
-#if !CORECLR
-                Marshal.ZeroFreeGlobalAllocUnicode(value);
-#else
-                SecureStringMarshal.ZeroFreeCoTaskMemUnicode(value);
-#endif
-            }
-        }
-
-        /// <summary>
-        /// Returns network credential based on credential given from request
-        /// </summary>
-        /// <returns></returns>
-        internal NetworkCredential GetNetworkCredential()
-        {
-            // if request has username and password, use that
-            if (!string.IsNullOrWhiteSpace(CredentialUsername) && CredentialPassword != null)
-            {
-#if CORECLR
-                // networkcredential class on coreclr does not accept securestring so we have to convert
-                return new NetworkCredential(CredentialUsername, SecureStringToString(CredentialPassword));
-#else
-                return new NetworkCredential(CredentialUsername, CredentialPassword);
-#endif
-            }
-
-            // if no user name and password, returns null
             return null;
         }
 

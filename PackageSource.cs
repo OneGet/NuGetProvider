@@ -1,4 +1,6 @@
 ﻿
+using Microsoft.PackageManagement.Provider.Utility;
+
 namespace Microsoft.PackageManagement.NuGetProvider 
 {
     using System;

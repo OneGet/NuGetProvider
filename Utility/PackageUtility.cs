@@ -10,8 +10,8 @@
     using System.Xml;
     using System.Xml.Linq;
     using Resources;
-    using Microsoft.PackageManagement.NuGetProvider;
-
+    using Microsoft.PackageManagement.Provider.Utility;
+ 
     /// <summary>
     /// Utility that can be used to handle the packaged related actions. 
     /// </summary>

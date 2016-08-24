@@ -10,6 +10,7 @@
     using System.Collections.Concurrent;
     using System.Globalization;
     using System.Security;
+    using Microsoft.PackageManagement.Provider.Utility;
 
     /// <summary>
     /// Package repository for downloading data from remote galleries
@@ -33,7 +34,7 @@
 
             if (Uri.TryCreate(queryUrl, UriKind.Absolute, out newUri))
             {
-                validatedUri = PathUtility.ValidateUri(newUri, request);
+                validatedUri = NuGetPathUtility.ValidateUri(newUri, request);
             }
 
             if (validatedUri == null)
@@ -167,7 +168,10 @@
             // this initial query is of the form http://www.nuget.org/api/v2/FindPackagesById()?id='jquery'&$skip={0}&$top={1}
             UriBuilder initialQuery = new UriBuilder(query.InsertSkipAndTop());
 
+            PackageBase firstPackage = null;
+
             // Send out an initial request
+            // we send out 1 initial request first to check for redirection and check whether repository supports odata
             using (Stream stream = NuGetClient.InitialDownloadDataToStream(initialQuery, startPoint, bufferSize, request))
             {
                 if (stream == null)
@@ -179,8 +183,9 @@
 
                 var entries = document.Root.ElementsNoNamespace("entry").ToList();
 
-                // If the initial request has less entries than the buffer size, return it because there won't be any more data
-                if (entries.Count < bufferSize)
+                // If the initial request has different number of entries than the buffer size, return it because this means the server
+                // does not understand odata request or there is no more data. in the former case, we have to stop to prevent infinite loop
+                if (entries.Count != bufferSize)
                 {
                     request.Debug(Messages.PackagesReceived, entries.Count);
                     stopSending = true;
@@ -189,6 +194,14 @@
                 foreach (XElement entry in entries)
                 {
                     var package = new PackageBase();
+
+                    // set the first package of the request. this is used later to verify that the case when the number of packages in the repository
+                    // is the same as the buffer size and the repository does not support odata query. in that case, we want to check whether the first package
+                    // exists anywhere in the second call. if it is, then we cancel the request (this is to prevent infinite loop)
+                    if (firstPackage == null)
+                    {
+                        firstPackage = package;
+                    }
 
                     PackageUtility.ReadEntryElement(ref package, entry);
                     yield return package;
@@ -253,7 +266,29 @@
                         var package = new PackageBase();
 
                         PackageUtility.ReadEntryElement(ref package, entry);
+
+                        if (firstPackage != null)
+                        {
+                            // check whether first package in the first request exists anywhere in the second request
+                            if (string.Equals(firstPackage.GetFullName(), package.GetFullName(), StringComparison.OrdinalIgnoreCase)
+                                && string.Equals(firstPackage.Version, package.Version, StringComparison.OrdinalIgnoreCase))
+                            {
+                                lock (stopLock)
+                                {
+                                    stopSending = true;
+                                }
+
+                                break;
+                            }
+                        }
+
                         yield return package;
+                    }
+
+                    // we only needs to check for the existence of the first package in the second request. don't need to do for subsequent request
+                    if (firstPackage != null)
+                    {
+                        firstPackage = null;
                     }
                 }
 

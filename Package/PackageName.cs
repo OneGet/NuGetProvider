@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.PackageManagement.NuGetProvider 
 {
     using System;
+    using Microsoft.PackageManagement.Provider.Utility;
 
     public class PackageName : IPackageName, IEquatable<PackageName>
     {

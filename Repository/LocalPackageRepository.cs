@@ -4,7 +4,8 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
-    using System.Linq;   
+    using System.Linq;
+    using Microsoft.PackageManagement.Provider.Utility;
 
     /// <summary>
     /// Package repository for downloading data from file repositories
@@ -209,7 +210,7 @@
             // and we do not need to match this for id and version.
             //var packageFileName = packageId + version + Constant.PackageExtension;
 
-            var packageFileName = FileUtility.MakePackageFileName(false, packageId, version.ToString());
+            var packageFileName = FileUtility.MakePackageFileName(false, packageId, version.ToString(), NuGetConstant.PackageExtension);
 
             // var packageFileName = PathResolver.GetPackageFileName(packageId, version);
             var manifestFileName = Path.ChangeExtension(packageFileName, NuGetConstant.ManifestExtension);
@@ -239,7 +240,17 @@
                 var partialManifestNameMatches = GetPackageFiles(partialManifestName).Where(
                     path => FileNameMatchesPattern(packageId, version, path));
 
-                return filesMatchingFullName.Concat(partialNameMatches).Concat(partialManifestNameMatches);
+                filesMatchingFullName = filesMatchingFullName.Concat(partialNameMatches).Concat(partialManifestNameMatches);
+            }
+
+            // cannot find matching files, we should try to search for just packageid.nupkg
+            if (filesMatchingFullName.Count() == 0)
+            {
+                // exclude version
+                var packageWithoutVersionName = FileUtility.MakePackageFileName(true, packageId, null, NuGetConstant.PackageExtension);
+                var packageWithoutVersionManifest = Path.ChangeExtension(packageWithoutVersionName, NuGetConstant.ManifestExtension);
+
+                return GetPackageFiles(packageWithoutVersionName).Concat(GetPackageFiles(packageWithoutVersionManifest));
             }
 
             return filesMatchingFullName;
