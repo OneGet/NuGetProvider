@@ -15,7 +15,7 @@
 	},
 
 	"dependencies": {
-		"System.Management.Automation": "1.0.0-*"
+		"System.Management.Automation": "1.0.0-alpha9"
 	},
 
 	"frameworks": {
@@ -44,7 +44,8 @@
             "../Microsoft.PackageManagement/Providers/Inbox/Common/Extensions/Extensions.cs",
             "../Microsoft.PackageManagement/Providers/Inbox/Common/Utility/*.cs",
             "../Microsoft.PackageManagement/Providers/Inbox/Common/Version/*.cs"
-          ]
+          ],
+          "exclude": [ "Resources/*" ]
 				}      
       }
 		},
@@ -59,7 +60,8 @@
             "../Microsoft.PackageManagement/Providers/Inbox/Common/Extensions/Extensions.cs",
             "../Microsoft.PackageManagement/Providers/Inbox/Common/Utility/*.cs",
             "../Microsoft.PackageManagement/Providers/Inbox/Common/Version/*.cs"
-          ]
+          ],
+          "exclude": [ "Resources/*" ]
 				}
 			},
       "dependencies": {
