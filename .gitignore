@@ -17,8 +17,10 @@ build/
 [Bb]in/
 [Oo]bj/
 [Oo]ut/
+[Gg]en/
 
 Messages.Designer.cs
+Resources/Microsoft.PackageManagement.NuGetProvider.Resources.Messages.resx
 
 # Windows Installer files
 *.cab
