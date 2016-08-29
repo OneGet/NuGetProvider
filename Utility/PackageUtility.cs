@@ -338,7 +338,7 @@
 
         /// <summary>
         /// Extract the package id.
-        /// From the feed, the package id is eqaul to something like this "http://www.nuget.org/api/v2/Packages(Id='jQuery',Version='2.1.3')".
+        /// From the feed, the package id is equal to something like this "http://www.nuget.org/api/v2/Packages(Id='jQuery',Version='2.1.3')".
         /// But we need id='jQuery'. 
         /// </summary>
         /// <param name="longId"></param>
