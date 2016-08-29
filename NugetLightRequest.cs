@@ -1681,7 +1681,7 @@
                     //A sample case will be something like find-package sql*Compact*.
 
                     //When the AllVersions property exists, the query like the following containing the wildcards does not work. We need to remove the wild cards and
-                    //replace it with the longest string searhc.
+                    //replace it with the longest string search.
                     //http://www.powershellgallery.com/api/v2/Search()?$orderby=DownloadCount%20desc,Id&searchTerm='tsdprovi*'&targetFramework=''&includePrerelease=false
 
                     if ((!String.IsNullOrWhiteSpace(name) && source.Location.IndexOf("powershellgallery.com", StringComparison.OrdinalIgnoreCase) == -1)
