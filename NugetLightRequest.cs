@@ -984,7 +984,7 @@
 
                         if (pkgItem != null && pkgItem.IsInstalled)
                         {
-                            //A user does not provide any package name in the commandeline, return them all
+                            //A user does not provide any package name in the command-line, return them all
                             if (string.IsNullOrWhiteSpace(name))
                             {
                                 isDup = true;
