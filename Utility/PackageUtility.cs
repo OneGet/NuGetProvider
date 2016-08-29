@@ -542,7 +542,7 @@
 
             if (!groups.Any())
             {
-                // since there is no group, we are encoutering
+                // since there is no group, we are encountering
                 // old format, <dependency> is direct child of <dependencies>
                 var dependencySet = new PackageDependencySet
                 {
