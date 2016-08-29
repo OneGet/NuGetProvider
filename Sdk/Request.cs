@@ -13,7 +13,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
         //private Dictionary<string, string[]> _options;
         private string[] _packageSources;
 
-        #region PackageMangaement Interfaces
+        #region PackageManagement Interfaces
 
         [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible", Justification = "It's a generated code")]
         public interface IProviderServices {
