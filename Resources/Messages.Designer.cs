@@ -439,7 +439,7 @@ namespace Microsoft.PackageManagement.NuGetProvider.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; packages recevied in the last request..
+        ///   Looks up a localized string similar to &apos;{0}&apos; packages received in the last request..
         /// </summary>
         internal static string PackagesReceived {
             get {
