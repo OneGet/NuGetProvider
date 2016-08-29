@@ -397,7 +397,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 return;
             }
 
-            // A user does not provide the package full Name at all Or used wildcard in the name. Let's try searching the entire reposiotry for matches.
+            // A user does not provide the package full Name at all Or used wildcard in the name. Let's try searching the entire repository for matches.
             request.YieldPackages(request.SearchForPackages(name), name);
             }
             catch (Exception ex)
