@@ -616,9 +616,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 return false;
             }
 
-            var reval = (newName.Equals(packageName, StringComparison.OrdinalIgnoreCase));
+            var retval = (newName.Equals(packageName, StringComparison.OrdinalIgnoreCase));
 
-            return reval;
+            return retval;
         }
     }
 }
