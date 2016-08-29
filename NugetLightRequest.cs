@@ -1605,7 +1605,7 @@
                 return pkgs;
             }
 
-            //Tags should be performed as *AND* intead of *OR"
+            //Tags should be performed as *AND* instead of *OR"
             //For example -FilterOnTag:{ "A", "B"}, the returned package should have both A and B.
             return pkgs.Where(pkg => FilterOnTag.Value.All(
                 tagFromUser =>
