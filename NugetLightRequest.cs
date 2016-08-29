@@ -1714,7 +1714,7 @@
 
                 if (!String.IsNullOrWhiteSpace(name))
                 {
-                    //Filter on the results. This is needed because we replace [...] regex in the searchterm at the begining of this method.
+                    //Filter on the results. This is needed because we replace [...] regex in the searchterm at the beginning of this method.
                     pkgs = FilterOnName(pkgs, name, isNameContainsWildCard);
                 }
 
