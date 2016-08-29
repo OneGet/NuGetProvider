@@ -416,7 +416,7 @@
         }
 
         /// <summary>
-        /// A help for processing the metatadata tag
+        /// A help for processing the metadata tag
         /// </summary>
         /// <param name="package"></param>
         /// <param name="xElement"></param>
