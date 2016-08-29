@@ -30,7 +30,7 @@
         internal static string GetPackageNameWithoutVersionInfo(string packageName)
         {
             //Input: JQuery.2.1.3
-            //output: Jqery
+            //output: JQuery
             // An unsupported scenario is if the package has name MyModule2.2 and version 2.0 then we will return version as 2.2.2.0 and packagename as mymodule
 
             string version = String.Empty;
