@@ -276,7 +276,7 @@
             }
 
             // Dependencies are of the form "dep1|dep2"
-            // Split them up and process each depedency with ParseDependency function
+            // Split them up and process each dependency with ParseDependency function
             var dependencies = value.Split('|').Select(ParseDependency);
 
             // group the dependencies by target framework
