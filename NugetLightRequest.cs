@@ -1409,7 +1409,7 @@
                 }
 
                 if (AllVersions.Value){
-                    //Display versions from lastest to oldest
+                    //Display versions from latest to oldest
                     pkgs = (from p in pkgs select p).OrderByDescending(x => x.Version);
                 }
 
