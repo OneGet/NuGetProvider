@@ -586,7 +586,7 @@
         }
 
         /// <summary>
-        /// Make sure the Nuget required xml tags exist witin the metadata tag in the nuspec file.
+        /// Make sure the Nuget required xml tags exist within the metadata tag in the nuspec file.
         /// </summary>
         /// <param name="package"></param>
         private static void EnsureRequiredXmlTags(PackageBase package)
