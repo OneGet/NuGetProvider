@@ -439,7 +439,7 @@ namespace Microsoft.PackageManagement.NuGetProvider.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; packages recevied in the last request..
+        ///   Looks up a localized string similar to &apos;{0}&apos; packages received in the last request..
         /// </summary>
         internal static string PackagesReceived {
             get {
@@ -648,9 +648,9 @@ namespace Microsoft.PackageManagement.NuGetProvider.Resources {
         /// <summary>
         ///   Looks up a localized string similar to Unknown category for &apos;{0}&apos;::&apos;{1}&apos;: &apos;{2}&apos;.
         /// </summary>
-        internal static string UnkownCategory {
+        internal static string UnknownCategory {
             get {
-                return ResourceManager.GetString("UnkownCategory", resourceCulture);
+                return ResourceManager.GetString("UnknownCategory", resourceCulture);
             }
         }
         

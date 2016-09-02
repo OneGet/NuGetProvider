@@ -244,7 +244,7 @@
     <value>Package '{0}' failed to be installed because: {1}</value>
   </data>
   <data name="PackagesReceived" xml:space="preserve">
-    <value>'{0}' packages recevied in the last request.</value>
+    <value>'{0}' packages received in the last request.</value>
   </data>
   <data name="ReadingManifest" xml:space="preserve">
     <value>Process Package Manifest</value>
@@ -312,7 +312,7 @@
   <data name="UninstalledPackage" xml:space="preserve">
     <value>Uninstalled '{0}' package.</value>
   </data>
-  <data name="UnkownCategory" xml:space="preserve">
+  <data name="UnknownCategory" xml:space="preserve">
     <value>Unknown category for '{0}'::'{1}': '{2}'</value>
   </data>
   <data name="Unzipping" xml:space="preserve">
