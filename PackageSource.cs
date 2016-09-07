@@ -4,7 +4,6 @@ using Microsoft.PackageManagement.Provider.Utility;
 namespace Microsoft.PackageManagement.NuGetProvider 
 {
     using System;
-    using System.Net;
     using System.IO;
 
     internal class PackageSource
@@ -60,6 +59,11 @@ namespace Microsoft.PackageManagement.NuGetProvider
         {
             get
             {
+                if (IsRegistered && !string.IsNullOrWhiteSpace(Name))
+                {
+                    return Name.ToBase64();
+                }
+
                 return Location.ToBase64();
             }
         }

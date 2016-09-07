@@ -186,6 +186,12 @@
             }
             finally
             {
+                // remove nupkg (installFullPath)
+                if (request.IsCalledFromPowerShellGet && File.Exists(installFullPath))
+                {
+                    FileUtility.DeleteFile(installFullPath, isThrow: false);
+                }
+
                 if (needToDelete)
                 {
                     // if the directory exists just delete it because it will contains the file as well
@@ -474,25 +480,277 @@
             }
 
             // Returns list of dependency to be installed in the correct order that we should install them
-            List<PackageItem> dependencyToBeInstalled = new List<PackageItem>();
+            List<Tuple<PackageItem, DependencyVersion>> dependencyToBeInstalled = new List<Tuple<PackageItem, DependencyVersion>>();
 
             HashSet<PackageItem> permanentlyMarked = new HashSet<PackageItem>(new PackageItemComparer());
             HashSet<PackageItem> temporarilyMarked = new HashSet<PackageItem>(new PackageItemComparer());
 
+            /*
+            Logic for dependency resolution:
+
+            1.Do the normal dependency resolution with a call to DepthFirstVisit (if you’re interested, I used the DFS method in https://en.wikipedia.org/wiki/Topological_sorting)
+
+            2.Collect a list of tuple where the first item is a dependency and the second item is a dependency constraint that this dependency resolved. The dependency constraint will be represented by a version range. For example, < AzureRM.Profile version 1.0.11, [1.0.11]> means the dependency returned is AzureRM.Profile version 1.0.11 and the constraint that it satisfies is its version must be <= 1.0.11 and >= 1.0.11 (I’m using NuGet versioning scheme https://docs.nuget.org/create/versioning)
+
+            3.	Now we will make a dictionary by grouping all the tuple according to the first item’s name, i.e.the dependency’s name.So in the example above, we will have a key called AzureRM.Profile and the value as a list with two values: [1.0.11] and[1.0.11,)
+
+            4.	Now for each key in the dictionary that has more than 1 items in its corresponding value(which means there are more than 1 constraint for this package), we will try to reduce the constraint by:
+                a.Sort the list of dependency constraint(version range) by the left value of the version range.For example, if we have [1.0], (0.8, 2.0], (,3.0), [0.9,3.0) then the sorted order is (,3.0), (0.8, 2.0], [0.9, 3.0), [1.0]
+                b.Now we iterate through this list of version range and try to find all the intersections.For example, in the example above, the intersection is just[1.0] since this interval intersects all 4 of the version range.
+
+            5.	For each dependency, we will now have a list of reduced constraints (version range). For each of the reduced constraint:
+                a.	We check whether we have a version of the dependency that satisfies this version range, if so, then we will add use this version. At the end of this process, we will have a smaller list of versions for the dependency (hopefully just 1).
+                b.	If for any reduced constraint, we cannot find a version of the dependency to satisfy it, then we will simply discard the reduced constraints list for this dependency and use what we original get from step 1 instead.
+
+            6.Now we can repeat step 1 again since for each dependency constraint, we will know which version of the dependency to use to satisfy it.
+            */
+
             // checks that there are no dependency loop 
-            hasDependencyLoop = !DepthFirstVisit(packageItem, temporarilyMarked, permanentlyMarked, dependencyToBeInstalled, new HashSet<string>(), request);
+            hasDependencyLoop = !DepthFirstVisit(new Tuple<PackageItem, DependencyVersion>(packageItem, null), temporarilyMarked, permanentlyMarked, dependencyToBeInstalled, new HashSet<string>(), request);
 
             if (!hasDependencyLoop)
             {
+                // this list contains packages that has the same id but different versions
+                Dictionary < string, List<DependencyVersion>> duplicatedPackages = new Dictionary<string, List<DependencyVersion>>(StringComparer.OrdinalIgnoreCase);
+
+                // this list will contain the result of duplicated packages after we have tried to reduce the constraints
+                Dictionary<string, HashSet<PackageItem>> reducedConstraintDuplicatedPackages = new Dictionary<string, HashSet<PackageItem>>(StringComparer.OrdinalIgnoreCase);
+
+                // populate the list
+                foreach (var dep in dependencyToBeInstalled)
+                {
+                    if (!duplicatedPackages.ContainsKey(dep.Item1.Id))
+                    {
+                        duplicatedPackages[dep.Item1.Id] = new List<DependencyVersion>();
+                        reducedConstraintDuplicatedPackages[dep.Item1.Id] = new HashSet<PackageItem>(new PackageItemComparer());
+                    }
+
+                    duplicatedPackages[dep.Item1.Id].Add(dep.Item2);
+                    reducedConstraintDuplicatedPackages[dep.Item1.Id].Add(dep.Item1);
+                }
+
+                // packages with duplicated ids
+                var duplicatedKeys = duplicatedPackages.Keys.Where(key => duplicatedPackages[key].Count > 1).ToList();
+
+                // for each of the duplicated key, we try to reduce the constraint.
+                foreach (var duplicatedKey in duplicatedKeys)
+                {
+                    duplicatedPackages[duplicatedKey] = ReduceConstraints(duplicatedPackages[duplicatedKey]);
+                    HashSet<PackageItem> unreducedList = reducedConstraintDuplicatedPackages[duplicatedKey];
+
+                    HashSet<PackageItem> reducedList = new HashSet<PackageItem>();
+
+                    foreach (var reducedConstraint in duplicatedPackages[duplicatedKey])
+                    {
+                        // look at the reduced constraint and see whether we can satisfy them (get the package with the largest version that can satisfy it)
+                        var maxVersion = unreducedList.Where(pkgItem => request.MinAndMaxVersionMatched(new SemanticVersion(pkgItem.Version), reducedConstraint.MinVersion.ToStringSafe(), reducedConstraint.MaxVersion.ToStringSafe(), reducedConstraint.IsMinInclusive, reducedConstraint.IsMaxInclusive))
+                            .Aggregate((currentMax, pkgItem) => (currentMax == null || (new SemanticVersion(currentMax.Version) < new SemanticVersion(pkgItem.Version))) ? pkgItem : currentMax);
+
+                        // if we can't satisfy the reduced constraint, just keep the original one
+                        // we can do further processing but this will slow down the installation a lot and it's not worth it since this is not a common case
+                        if (maxVersion == null)
+                        {
+                            reducedList = unreducedList;
+                            break;
+                        }
+
+                        reducedList.Add(maxVersion);
+                    }
+
+                    reducedConstraintDuplicatedPackages[duplicatedKey] = reducedList;
+                }
+
+                dependencyToBeInstalled = new List<Tuple<PackageItem, DependencyVersion>>();
+
+                permanentlyMarked = new HashSet<PackageItem>(new PackageItemComparer());
+                temporarilyMarked = new HashSet<PackageItem>(new PackageItemComparer());
+
+                // now we run the dfs again, this time we don't need to check for the loop but we'll try to use the packages from the reducedlist
+                DepthFirstVisit(new Tuple<PackageItem, DependencyVersion>(packageItem, null), temporarilyMarked, permanentlyMarked, dependencyToBeInstalled, new HashSet<string>(), request, reducedConstraintDuplicatedPackages);
+
                 request.Debug(Messages.DebugInfoReturnCall, "NuGetClient", "GetPackageDependencies");
                 // remove the last item of the list because that is the package itself
                 dependencyToBeInstalled.RemoveAt(dependencyToBeInstalled.Count - 1);
-                return dependencyToBeInstalled;
+                return dependencyToBeInstalled.Select(pkgTuple => pkgTuple.Item1);
             }
 
             // there are dependency loop. 
             request.Debug(Messages.DebugInfoReturnCall, "NuGetClient", "GetPackageDependencies");
             return Enumerable.Empty<PackageItem>();
+        }
+
+        private static List<DependencyVersion> ReduceConstraints(List<DependencyVersion> constraints)
+        {
+            if (constraints == null || constraints.Count <= 1)
+            {
+                return constraints;
+            }
+
+            // sort by min version
+            constraints.Sort(new DependencyVersionComparerBasedOnMinVersion());
+
+            // now reduce the constraints
+            List<DependencyVersion> results = new List<DependencyVersion>();
+
+            // constraint so far
+            var constraintSoFar = constraints[0];
+
+            for (int i = 1; i < constraints.Count; i += 1)
+            {
+                var current = constraints[i];
+
+                // case where the current does not have null min version
+                if (current.MinVersion != null)
+                {
+                    // check for the nonoverlapping case
+                    if (constraintSoFar.MaxVersion != null)
+                    {
+                        // here constraintsofar max version is not null so we can check for overlap
+                        if (current.MinVersion > constraintSoFar.MaxVersion)
+                        {
+                            // no overlap, add constraint so far to results and make the current one the constraint so far
+                            results.Add(constraintSoFar);
+                            constraintSoFar = current;
+
+                            if (i == constraints.Count - 1)
+                            {
+                                // if we are already at the end, just return the constraintssofar
+                                results.Add(constraintSoFar);
+                            }
+
+                            continue;
+                        }
+                        else if (current.MinVersion == constraintSoFar.MaxVersion)
+                        {
+                            // if constraintsofar is not maxinclusive, then they do not overlap
+                            // if constraintsofar is maxinclusive and current is not mininclusive, then do not overlap too
+                            if (!constraintSoFar.IsMaxInclusive || (constraintSoFar.IsMaxInclusive && !current.IsMinInclusive))
+                            {
+                                results.Add(constraintSoFar);
+                                constraintSoFar = current;
+                            }
+                            else if (current.IsMinInclusive)
+                            {
+                                // constraint so far is max inclusive here and current is minclusive
+                                // the overlap is the maxversion
+                                constraintSoFar.MinVersion = current.MinVersion;
+                                constraintSoFar.IsMinInclusive = true;
+                                constraintSoFar.IsMaxInclusive = true;
+                            }
+
+                            if (i == constraints.Count - 1)
+                            {
+                                // if we are already at the end, just return the constraintssofar
+                                results.Add(constraintSoFar);
+                            }
+
+                            continue;
+                        }
+
+                        // otherwise they must overlap, we will handle these cases below
+                    }
+                }
+
+                if (constraintSoFar.MinVersion == null)
+                {
+                    // only need to worry about the case where min version of current is not null because if it is null then we don't need to set that of constraint so far
+                    if (current.MinVersion != null)
+                    {
+                        // the nonverlapping case is already handled so we can just set this without worrying whether
+                        // current.minversion is greater than constraintsofar.maxversion
+                        constraintSoFar.MinVersion = current.MinVersion;
+                        constraintSoFar.IsMinInclusive = current.IsMinInclusive;
+                    }                    
+                }
+                else if (current.MinVersion == constraintSoFar.MinVersion)
+                {
+                    // here constraintsofar minversion is not null so min version of current cannot be null
+
+                    // if constraint so far is something like [1.0] and current is not min inclusive then we may have to maintain this constraint and create a new constraint (since they do not overlap)
+                    if (constraintSoFar.IsMinInclusive && constraintSoFar.MaxVersion == constraintSoFar.MinVersion && constraintSoFar.IsMaxInclusive && !current.IsMinInclusive)
+                    {
+                        // in this case, constraint so far and the current one do not overlap so create a new one.
+                        results.Add(constraintSoFar);
+                        constraintSoFar = current;
+
+                        if (i == constraints.Count - 1)
+                        {
+                            // if we are already at the end, just return the constraintssofar
+                            results.Add(constraintSoFar);
+                        }
+
+                        continue;
+                    }
+
+                    // if current is not min inclusive then the constraint so far has to be not min inclusive 
+                    if (!current.IsMinInclusive)
+                    {
+                        // no need to update minvalue because we already know
+                        constraintSoFar.IsMinInclusive = false;
+                    }
+                }
+                else
+                {
+                    // here both min version of current and constraint so far is not null
+                    // we already checked for non overlapping case above so we can assume they will overlap here
+                    // ie, current.MinVersion < constraintSoFar.MaxVersion
+                  
+                    constraintSoFar.MinVersion = current.MinVersion;
+                    constraintSoFar.IsMinInclusive = current.IsMinInclusive;                    
+                }
+
+                #region setMax
+                // now set the max value of constraint so far to whichever is smaller, current or constraintsofar
+                if (constraintSoFar.MaxVersion == null)
+                {
+                    constraintSoFar.MaxVersion = current.MaxVersion;
+                    constraintSoFar.IsMaxInclusive = current.IsMaxInclusive;
+
+                    if (i == constraints.Count - 1)
+                    {
+                        // if we are already at the end, just return the constraintssofar
+                        results.Add(constraintSoFar);
+                    }
+
+                    continue;
+                }
+
+                // if current maxversion is not null then constraintsofar has smaller version (or at least the same
+                // or if current max is smaller then this is already contained within
+                if (current.MaxVersion == null || current.MaxVersion < constraintSoFar.MaxVersion)
+                {
+                    if (i == constraints.Count - 1)
+                    {
+                        // if we are already at the end, just return the constraintssofar
+                        results.Add(constraintSoFar);
+                    }
+
+                    // just continue since constraintsofar has smaller version
+                    continue;
+                }
+
+                if (current.MaxVersion == constraintSoFar.MaxVersion)
+                {
+                    // if 1 of them is not maxinclusive than the overlap cannot have max inclusive
+                    constraintSoFar.IsMaxInclusive = (!constraintSoFar.IsMaxInclusive) || (!current.IsMaxInclusive);
+                }
+                else
+                {
+                    // current.MaxVersion > constraintSoFar.MaxVersion
+                    // set max of constraint so far to current max
+                    constraintSoFar.MaxVersion = current.MaxVersion;
+                    constraintSoFar.IsMaxInclusive = current.IsMaxInclusive;
+                }
+                #endregion
+
+                if (i == constraints.Count - 1)
+                {
+                    // if we are already at the end, just return the constraintssofar
+                    results.Add(constraintSoFar);
+                }
+            }
+
+            return results;
         }
 
         /// <summary>
@@ -502,31 +760,33 @@
         /// <param name="dependencyToBeInstalled"></param>
         /// <param name="permanentlyMarked"></param>
         /// <param name="temporarilyMarked"></param>
-        /// <param name="processedDependencies"></param>
+        /// <param name="dependenciesProcessed"></param>
+        /// <param name="reducedConstraintDuplicatedPackages"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        internal static bool DepthFirstVisit(PackageItem packageItem, HashSet<PackageItem> temporarilyMarked, HashSet<PackageItem> permanentlyMarked, List<PackageItem> dependencyToBeInstalled, HashSet<string> processedDependencies, NuGetRequest request)
+        internal static bool DepthFirstVisit(Tuple<PackageItem, DependencyVersion> packageItem, HashSet<PackageItem> temporarilyMarked, HashSet<PackageItem> permanentlyMarked, List<Tuple<PackageItem, DependencyVersion>> dependencyToBeInstalled,
+            HashSet<string> dependenciesProcessed, NuGetRequest request, Dictionary<string, HashSet<PackageItem>> reducedConstraintDuplicatedPackages=null)
         {
             // dependency loop detected because the element is temporarily marked
-            if (temporarilyMarked.Contains(packageItem))
+            if (temporarilyMarked.Contains(packageItem.Item1))
             {
                 return false;
             }
 
             // this is permanently marked. So we don't have to visit it.
             // This is to resolve a case where we have: A->B->C and A->C. Then we need this when we visit C again from either B or A.
-            if (permanentlyMarked.Contains(packageItem))
+            if (permanentlyMarked.Contains(packageItem.Item1))
             {
                 return true;
             }
 
             // Mark this node temporarily so we can detect cycle.
-            temporarilyMarked.Add(packageItem);
+            temporarilyMarked.Add(packageItem.Item1);
 
             // Visit the dependency
-            foreach (var dependency in GetPackageDependenciesHelper(packageItem, processedDependencies, request))
+            foreach (var dependency in GetPackageDependenciesHelper(packageItem.Item1, dependenciesProcessed, request, reducedConstraintDuplicatedPackages))
             {
-                if (!DepthFirstVisit(dependency, temporarilyMarked, permanentlyMarked, dependencyToBeInstalled, processedDependencies, request))
+                if (!DepthFirstVisit(dependency, temporarilyMarked, permanentlyMarked, dependencyToBeInstalled, dependenciesProcessed, request, reducedConstraintDuplicatedPackages))
                 {
                     // if dfs returns false then we have encountered a loop
                     return false;
@@ -538,10 +798,10 @@
             dependencyToBeInstalled.Add(packageItem);
 
             // Done with this node so mark it permanently
-            permanentlyMarked.Add(packageItem);
+            permanentlyMarked.Add(packageItem.Item1);
 
             // Unmark it temporarily
-            temporarilyMarked.Remove(packageItem);
+            temporarilyMarked.Remove(packageItem.Item1);
 
             return true;
         }
@@ -550,9 +810,11 @@
         /// Returns the package dependencies of packageItem. We only return the dependencies that are not installed in the destination folder of request
         /// </summary>
         /// <param name="packageItem"></param>
-        /// <param name="processedDependencies"></param>
+        /// <param name="depedenciesToProcessed"></param>
+        /// <param name="reducedConstraintDuplicatedPackages"></param>
         /// <param name="request"></param>
-        private static IEnumerable<PackageItem> GetPackageDependenciesHelper(PackageItem packageItem, HashSet<string> processedDependencies, NuGetRequest request)
+        private static IEnumerable<Tuple<PackageItem, DependencyVersion>> GetPackageDependenciesHelper(PackageItem packageItem, HashSet<string> depedenciesToProcessed,
+            NuGetRequest request, Dictionary<string, HashSet<PackageItem>> reducedConstraintDuplicatedPackages = null)
         {
             if (packageItem.Package.DependencySetList == null)
             {
@@ -571,7 +833,7 @@
                 {
                     var depKey = string.Format(CultureInfo.InvariantCulture, "{0}!#!{1}", dep.Id, dep.DependencyVersion.ToStringSafe());
 
-                    if (processedDependencies.Contains(depKey))
+                    if (depedenciesToProcessed.Contains(depKey))
                     {
                         continue;
                     }
@@ -581,6 +843,24 @@
 
                     // Get the max dependencies version
                     string maxVersion = dep.DependencyVersion.MaxVersion.ToStringSafe();
+
+
+                    if (reducedConstraintDuplicatedPackages != null && reducedConstraintDuplicatedPackages.ContainsKey(dep.Id))
+                    {
+                        // this is already processed before
+                        depedenciesToProcessed.Add(depKey);
+
+                        HashSet<PackageItem> reducedList = reducedConstraintDuplicatedPackages[dep.Id];
+
+                        if (reducedList.Count == 1)
+                        {
+                            yield return new Tuple<PackageItem, DependencyVersion>(reducedList.First(), dep.DependencyVersion);
+                            continue;
+                        }
+
+                        // we already do processing so we can just pick the one that satisfies the constraint
+                        yield return new Tuple<PackageItem, DependencyVersion>(reducedList.First(pkgItem => request.MinAndMaxVersionMatched(new SemanticVersion(pkgItem.Version), minVersion, maxVersion, dep.DependencyVersion.IsMinInclusive, dep.DependencyVersion.IsMaxInclusive)), dep.DependencyVersion);
+                    }
 
                     if (!force)
                     {
@@ -627,7 +907,7 @@
                         if (installed)
                         {
                             // already processed this so don't need to do this next time
-                            processedDependencies.Add(dep.Id);
+                            depedenciesToProcessed.Add(dep.Id);
                             request.Verbose(String.Format(CultureInfo.CurrentCulture, Messages.AlreadyInstalled, dep.Id));
                             // already have a dependency so move on
                             continue;
@@ -644,10 +924,9 @@
                         break;
                     }
 
-                    // Get the package that is the latest version
-                    yield return dependentPackageItem.OrderByDescending(each => each.Version).FirstOrDefault();
+                    yield return new Tuple<PackageItem, DependencyVersion>(dependentPackageItem.OrderByDescending(each => each.Version).FirstOrDefault(), dep.DependencyVersion);
 
-                    processedDependencies.Add(depKey);
+                    depedenciesToProcessed.Add(depKey);
                 }
             }
         }
@@ -735,7 +1014,8 @@
                 // copy the nupkg file if it's not in
                 var nupkgFilePath = Path.Combine(installedFolder, FileUtility.MakePackageFileName(request.ExcludeVersion.Value, packageName, version, NuGetConstant.PackageExtension));
 
-                if (!File.Exists(nupkgFilePath))
+                // only copy if this is not called from powershellget
+                if (!request.IsCalledFromPowerShellGet && !File.Exists(nupkgFilePath))
                 {
                     File.Copy(sourceFilePath, nupkgFilePath);
                 }
