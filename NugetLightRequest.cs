@@ -20,13 +20,11 @@
     using System.Net;
     using Microsoft.PackageManagement.Provider.Utility;
 
-    using SemanticVersion = Microsoft.PackageManagement.Provider.Utility.SemanticVersion;
-
     /// <summary> 
     /// This class drives the Request class that is an interface exposed from the PackageManagement Platform to the provider to use.
     /// </summary>
     public abstract class NuGetRequest : Request {
-        private static readonly Regex _regexFastPath = new Regex(@"\$(?<source>[\w,\+,\/,=]*)\\(?<id>[\w,\+,\/,=]*)\\(?<version>[\w,\+,\/,=]*)\\(?<sources>[\w,\+,\/,=]*)");
+        private static readonly Regex _regexFastPath = new Regex(@"\$(?<source>[\w,\+,\/,=]*)\\(?<id>[\w,\+,\/,=]*)\\(?<version>[\w,\+,\/,=]*)\\(?<sources>[\w,\+,\/,=]*)(\\(?<powershellget>[\w,\+,\/,=]*))?");
         private static readonly byte[] _nugetBytes = Encoding.UTF8.GetBytes("NuGet");
         private string _configurationFileLocation;
         private XDocument _config;
@@ -45,13 +43,14 @@
         private string _destinationPath = null;
 
         internal Lazy<bool> SkipValidate;  //??? Seems to be a design choice. Why let a user to decide?
-        // we cannot enable skipdependencies because this will break downlevel psget which sets skipdependencies to true
+        // we cannot enable skipdepedencies because this will break downlevel psget which sets skipdependencies to true
         //internal Lazy<bool> SkipDependencies;     
-        //internal ImplicitLazy<bool> ContinueOnFailure;
-        //internal ImplicitLazy<bool> FindByCanonicalId;
+        //internal ImplictLazy<bool> ContinueOnFailure;
+        //internal ImplictLazy<bool> FindByCanonicalId;
 
         private HttpClient _httpClient;
         private HttpClient _httpClientWithoutAcceptHeader;
+        private bool? _isCalledFromPowerShellGet;
 
         internal const string DefaultConfig = @"<?xml version=""1.0""?>
 <configuration>
@@ -73,8 +72,8 @@
             Scope = new Lazy<string>(() => GetOptionValue("Scope"));
 
             //SkipDependencies = new Lazy<bool>(() => GetOptionValue("SkipDependencies").IsTrue());
-            //ContinueOnFailure = new ImplicitLazy<bool>(() => GetOptionValue("ContinueOnFailure").IsTrue());           
-            //FindByCanonicalId = new ImplicitLazy<bool>(() => GetOptionValue("FindByCanonicalId").IsTrue());
+            //ContinueOnFailure = new ImplictLazy<bool>(() => GetOptionValue("ContinueOnFailure").IsTrue());           
+            //FindByCanonicalId = new ImplictLazy<bool>(() => GetOptionValue("FindByCanonicalId").IsTrue());
 
             Headers = new Lazy<string[]>(() => (GetOptionValues("Headers") ?? new string[0]).ToArray());
             InstalledPackages = new Lazy<PackageBase[]>(() => (GetInstalledPackagesOptionValue()).ToArray());
@@ -173,10 +172,6 @@
                 // or  $env:programfiles\NuGet\Packages\  if you are an admin.
                 try
                 {
-#if UNIX
-                    // there is only 1 installation location by default for linux ("HOME/.local/share/powershell/PackageManagement/NuGet/Packages")
-                    string basePath = CurrentUserDefaultInstallLocation;
-#else
                     var scope = (Scope == null) ? null : Scope.Value;
                     scope = string.IsNullOrWhiteSpace(scope) ? Constants.AllUsers : scope;
                     string basePath;
@@ -198,7 +193,6 @@
                             Constants.Messages.InstallRequiresCurrentUserScopeParameterForNonAdminUser, AllUserDefaultInstallLocation, CurrentUserDefaultInstallLocation);
                         return string.Empty;
                     }
-#endif
 
                     if (!Directory.Exists(basePath))
                     {
@@ -222,11 +216,7 @@
             get
             {
 #if CORECLR
-#if UNIX
-                return Path.Combine(Path.GetDirectoryName(Platform.SelectProductNameForDirectory(Platform.XDG_Type.DATA)), "PackageManagement", "NuGet", "Packages");
-#else
                 return Path.Combine(Environment.GetEnvironmentVariable("LocalAppData"), "PackageManagement", "NuGet", "Packages"); 
-#endif
 #else
                 return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PackageManagement", "NuGet", "Packages");
 #endif
@@ -239,11 +229,7 @@
             get
             {
 #if CORECLR
-#if UNIX
-                return Path.Combine(Path.GetDirectoryName(Platform.SelectProductNameForDirectory(Platform.XDG_Type.DATA)), "PackageManagement", "NuGet", "Packages");
-#else
                 return Path.Combine(Environment.GetEnvironmentVariable("ProgramFiles"), "NuGet", "Packages"); 
-#endif
 #else
                 return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "NuGet", "Packages");
 #endif
@@ -619,6 +605,25 @@
             return string.Format(CultureInfo.CurrentCulture, "{0}#{1}", pkg.Package.Id, pkg.Package.Version.ToString());
         }
 
+        internal bool IsCalledFromPowerShellGet
+        {
+            get
+            {
+                // not initialized yet
+                if (!_isCalledFromPowerShellGet.HasValue)
+                {
+                    _isCalledFromPowerShellGet = Headers.Value.Any(header => header.StartsWith("PSGalleryClientVersion=", StringComparison.OrdinalIgnoreCase));
+                }
+
+                return _isCalledFromPowerShellGet.Value;
+            }
+            set
+            {
+                _isCalledFromPowerShellGet = true;
+            }
+        }
+
+
         /// <summary>
         /// HttpClient with Accept-CharSet and Accept-Encoding Header
         /// We want to reuse HttpClient
@@ -984,7 +989,7 @@
 
                         if (pkgItem != null && pkgItem.IsInstalled)
                         {
-                            //A user does not provide any package name in the command-line, return them all
+                            //A user does not provide any package name in the commandeline, return them all
                             if (string.IsNullOrWhiteSpace(name))
                             {
                                 isDup = true;
@@ -1068,6 +1073,12 @@
         /// <param name="version">package version</param>
         /// <returns></returns>
         internal string MakeFastPath(PackageSource source, string id, string version) {
+            // if this is called from powershellget, append nonupkg at the end
+            if (IsCalledFromPowerShellGet)
+            {
+                return String.Format(CultureInfo.InvariantCulture, @"${0}\{1}\{2}\{3}\{4}", source.Serialized, id.ToBase64(), version.ToBase64(), (Sources ?? new string[0]).Select(each => each.ToBase64()).SafeAggregate((current, each) => current + "|" + each), "powershellget".ToBase64());
+            }
+
             return String.Format(CultureInfo.InvariantCulture, @"${0}\{1}\{2}\{3}", source.Serialized, id.ToBase64(), version.ToBase64(), (Sources ?? new string[0]).Select(each => each.ToBase64()).SafeAggregate((current, each) => current + "|" + each));
         }
 
@@ -1304,11 +1315,7 @@
                         }
 
                     } else {
-#if UNIX
-                        var appdataFolder = Path.GetDirectoryName(Platform.SelectProductNameForDirectory(Platform.XDG_Type.CONFIG));
-#else
                         var appdataFolder = Environment.GetEnvironmentVariable("appdata");
-#endif
                         _configurationFileLocation = Path.Combine(appdataFolder, "NuGet", NuGetConstant.SettingsFileName);
 
                         //create directory if does not exist
@@ -1409,7 +1416,7 @@
                 }
 
                 if (AllVersions.Value){
-                    //Display versions from latest to oldest
+                    //Display versions from lastest to oldest
                     pkgs = (from p in pkgs select p).OrderByDescending(x => x.Version);
                 }
 
@@ -1528,6 +1535,12 @@
             version = match.Success ? match.Groups["version"].Value.FromBase64() : null;
             var srcs = match.Success ? match.Groups["sources"].Value : string.Empty;
             sources = srcs.Split('|').Select(each => each.FromBase64()).Where(each => !string.IsNullOrWhiteSpace(each)).ToArray();
+
+            if (match.Groups["powershellget"].Success && match.Groups["powershellget"].Value.FromBase64().EqualsIgnoreCase("powershellget"))
+            {
+                IsCalledFromPowerShellGet = true;
+            }
+
             return match.Success;
         }
 
@@ -1605,7 +1618,7 @@
                 return pkgs;
             }
 
-            //Tags should be performed as *AND* instead of *OR"
+            //Tags should be performed as *AND* intead of *OR"
             //For example -FilterOnTag:{ "A", "B"}, the returned package should have both A and B.
             return pkgs.Where(pkg => FilterOnTag.Value.All(
                 tagFromUser =>
@@ -1681,7 +1694,7 @@
                     //A sample case will be something like find-package sql*Compact*.
 
                     //When the AllVersions property exists, the query like the following containing the wildcards does not work. We need to remove the wild cards and
-                    //replace it with the longest string search.
+                    //replace it with the longest string searhc.
                     //http://www.powershellgallery.com/api/v2/Search()?$orderby=DownloadCount%20desc,Id&searchTerm='tsdprovi*'&targetFramework=''&includePrerelease=false
 
                     if ((!String.IsNullOrWhiteSpace(name) && source.Location.IndexOf("powershellgallery.com", StringComparison.OrdinalIgnoreCase) == -1)
@@ -1714,7 +1727,7 @@
 
                 if (!String.IsNullOrWhiteSpace(name))
                 {
-                    //Filter on the results. This is needed because we replace [...] regex in the searchterm at the beginning of this method.
+                    //Filter on the results. This is needed because we replace [...] regex in the searchterm at the begining of this method.
                     pkgs = FilterOnName(pkgs, name, isNameContainsWildCard);
                 }
 
