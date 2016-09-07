@@ -18,6 +18,7 @@
     using System.Security;
     using System.Runtime.InteropServices;
     using System.Net;
+    using SemanticVersion = Microsoft.PackageManagement.Provider.Utility.SemanticVersion;
     using Microsoft.PackageManagement.Provider.Utility;
 
     /// <summary> 
