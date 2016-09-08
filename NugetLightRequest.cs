@@ -45,7 +45,7 @@
 
         internal Lazy<bool> SkipValidate;  //??? Seems to be a design choice. Why let a user to decide?
         // we cannot enable skipdepedencies because this will break downlevel psget which sets skipdependencies to true
-        //internal Lazy<bool> SkipDependencies;     
+        internal Lazy<bool> SkipDependencies;     
         //internal ImplictLazy<bool> ContinueOnFailure;
         //internal ImplictLazy<bool> FindByCanonicalId;
 
@@ -1409,9 +1409,16 @@
                 // otherwise fall back to traditional behavior
                 var pkgs = source.Repository.FindPackagesById(name, request);
 
+                // exact version is required if required version is not null or empty OR maxversion == minversion and min and max inclusive are true
+                bool exactVersionRequired = (!string.IsNullOrWhiteSpace(requiredVersion))
+                    || (!string.IsNullOrWhiteSpace(maximumVersion)
+                        && !string.IsNullOrWhiteSpace(minimumVersion)
+                        && (new SemanticVersion(minimumVersion) == new SemanticVersion(maximumVersion))
+                        && minInclusive && maxInclusive);
+
                 // if required version not specified then don't use unlisted version
                 // unlisted version is the one that has published year as 1900
-                if (string.IsNullOrWhiteSpace(requiredVersion))
+                if (!exactVersionRequired)
                 {
                     pkgs = pkgs.Where(pkg => pkg.Published.HasValue && pkg.Published.Value.Year > 1900);
                 }
@@ -1420,10 +1427,7 @@
                     //Display versions from lastest to oldest
                     pkgs = (from p in pkgs select p).OrderByDescending(x => x.Version);
                 }
-
-
-                //A user does not provide version info, we choose the latest
-                if (!AllVersions.Value && (String.IsNullOrWhiteSpace(requiredVersion) && String.IsNullOrWhiteSpace(minimumVersion) && String.IsNullOrWhiteSpace(maximumVersion)))
+                else if (String.IsNullOrWhiteSpace(requiredVersion) && String.IsNullOrWhiteSpace(minimumVersion) && String.IsNullOrWhiteSpace(maximumVersion))
                 {
 
                     if (AllowPrereleaseVersions.Value || source.Repository.IsFile) {
@@ -1436,6 +1440,11 @@
                     } else {
                         pkgs = from p in pkgs where p.IsLatestVersion select p;
                     }
+                }
+                else if (!exactVersionRequired && !AllowPrereleaseVersions.Value)
+                {
+                    // if exact version is not required and allow prerelease is false, we will have to filter out prerelease version
+                    pkgs = from p in pkgs where string.IsNullOrWhiteSpace(p.Version.SpecialVersion) select p;
                 }
              
                 pkgs = FilterOnContains(pkgs);
@@ -1626,8 +1635,8 @@
                 {
                     if (string.IsNullOrWhiteSpace(pkg.Tags))
                     {
-                        // return all packages if a package has no tags.
-                        return true;
+                        // if there are tags and a package has no tag, don't return it
+                        return false;
                     }
                     var tagArray = pkg.Tags.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                     return tagArray.Any(tagFromPackage => tagFromPackage.EqualsIgnoreCase(tagFromUser));
