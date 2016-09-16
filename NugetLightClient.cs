@@ -382,26 +382,34 @@
             request.OriginalSources = pkgItem.Sources;
 
             bool hasDependencyLoop = false;
+
+            int numberOfDependencies = 0;
+            IEnumerable<PackageItem> dependencies = new List<PackageItem>();
             
-            // Get the dependencies that are not already installed
-            var dependencies = NuGetClient.GetPackageDependenciesToInstall(request, pkgItem, ref hasDependencyLoop).ToArray();
-
-            // If there is a dependency loop. Warn the user and don't install the package
-            if (hasDependencyLoop)
+            // skip installing dependencies
+            if (!request.SkipDependencies.Value)
             {
-                // package itself didn't install. Report error
-                request.WriteError(ErrorCategory.DeadlockDetected, pkgItem.Id, Constants.Messages.DependencyLoopDetected, pkgItem.Id);
-                return false;
-            }
+                // Get the dependencies that are not already installed
+                dependencies = NuGetClient.GetPackageDependenciesToInstall(request, pkgItem, ref hasDependencyLoop).ToArray();
 
-            // request may get canceled if there is a package dependencies missing
-            if (request.IsCanceled)
-            {
-                return false;
+                // If there is a dependency loop. Warn the user and don't install the package
+                if (hasDependencyLoop)
+                {
+                    // package itself didn't install. Report error
+                    request.WriteError(ErrorCategory.DeadlockDetected, pkgItem.Id, Constants.Messages.DependencyLoopDetected, pkgItem.Id);
+                    return false;
+                }
+
+                // request may get canceled if there is a package dependencies missing
+                if (request.IsCanceled)
+                {
+                    return false;
+                }
+
+                numberOfDependencies = dependencies.Count();
             }
 
             int n = 0;
-            int numberOfDependencies = dependencies.Count();
 
             // Start progress
             ProgressTracker progressTracker = ProgressTracker.StartProgress(null, string.Format(CultureInfo.InvariantCulture, Messages.InstallingOrDownloadingPackage, operation, pkgItem.Id), request);

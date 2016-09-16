@@ -72,7 +72,7 @@
             SkipValidate = new Lazy<bool>(() => GetOptionValue("SkipValidate").IsTrue());
             Scope = new Lazy<string>(() => GetOptionValue("Scope"));
 
-            //SkipDependencies = new Lazy<bool>(() => GetOptionValue("SkipDependencies").IsTrue());
+            SkipDependencies = new Lazy<bool>(() => GetOptionValue("SkipDependencies").IsTrue());
             //ContinueOnFailure = new ImplictLazy<bool>(() => GetOptionValue("ContinueOnFailure").IsTrue());           
             //FindByCanonicalId = new ImplictLazy<bool>(() => GetOptionValue("FindByCanonicalId").IsTrue());
 
