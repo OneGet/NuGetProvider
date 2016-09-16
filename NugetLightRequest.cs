@@ -45,7 +45,7 @@
 
         internal Lazy<bool> SkipValidate;  //??? Seems to be a design choice. Why let a user to decide?
         // we cannot enable skipdepedencies because this will break downlevel psget which sets skipdependencies to true
-        internal Lazy<bool> SkipDependencyCheck;     
+        internal Lazy<bool> SkipDependencies;     
         //internal ImplictLazy<bool> ContinueOnFailure;
         //internal ImplictLazy<bool> FindByCanonicalId;
 
@@ -72,7 +72,7 @@
             SkipValidate = new Lazy<bool>(() => GetOptionValue("SkipValidate").IsTrue());
             Scope = new Lazy<string>(() => GetOptionValue("Scope"));
 
-            SkipDependencyCheck = new Lazy<bool>(() => GetOptionValue("SkipDependencyCheck").IsTrue());
+            SkipDependencies = new Lazy<bool>(() => GetOptionValue("SkipDependencies").IsTrue());
             //ContinueOnFailure = new ImplictLazy<bool>(() => GetOptionValue("ContinueOnFailure").IsTrue());           
             //FindByCanonicalId = new ImplictLazy<bool>(() => GetOptionValue("FindByCanonicalId").IsTrue());
 

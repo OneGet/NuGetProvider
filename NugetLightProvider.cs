@@ -137,7 +137,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     request.YieldDynamicOption("Destination", Constants.OptionType.Folder, false);
                     request.YieldDynamicOption("ExcludeVersion", Constants.OptionType.Switch, false);
                     request.YieldDynamicOption("Scope", Constants.OptionType.String, false, new[] { Constants.CurrentUser, Constants.AllUsers });
-                    request.YieldDynamicOption("SkipDependencyCheck", Constants.OptionType.Switch, false);
+                    request.YieldDynamicOption("SkipDependencies", Constants.OptionType.Switch, false);
                     //request.YieldDynamicOption("ContinueOnFailure", Constants.OptionType.Switch, false);
                     break;
 

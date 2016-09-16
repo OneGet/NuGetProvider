@@ -387,7 +387,7 @@
             IEnumerable<PackageItem> dependencies = new List<PackageItem>();
             
             // skip installing dependencies
-            if (!request.SkipDependencyCheck.Value)
+            if (!request.SkipDependencies.Value)
             {
                 // Get the dependencies that are not already installed
                 dependencies = NuGetClient.GetPackageDependenciesToInstall(request, pkgItem, ref hasDependencyLoop).ToArray();
