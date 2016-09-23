@@ -2,10 +2,13 @@
 	"name": "Microsoft.PackageManagement.NuGetProvider",
 	"version": "1.0.0-*",
 
-	"buildOptions": {
-		"warningsAsErrors": true
-	},
 
+  "buildOptions": {
+        "keyFile": "35MSSharedLib1024.snk",
+        "delaySign": true,
+        "publicSign": false,
+        "warningsAsErrors": true
+   },
 	"configurations": {
 		"Linux": {
 			"buildOptions": {
