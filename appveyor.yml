@@ -1,48 +1,32 @@
-version: 2.8.5.{build}
+version: 1.0.{build}
+os:
+- WMF 5
 configuration: Release
 platform: Any CPU
-before_build:
-- ps: >-
-    $buildversion = New-Object System.Version($env:APPVEYOR_BUILD_VERSION)
+clone_folder: c:\projects\NuGetTest\NuGetProvider
 
-    $v = New-Object System.Version($buildversion.Major, $buildversion.Minor, $buildversion.Build, ($buildversion.Revision - 18))
+# Install Pester
+init: 
+    - cinst -y pester
 
+install:
 
-    $filepath = resolve-path ".\Properties\AssemblyInfo.cs"
-
-    $content = (get-content -raw $filepath )
-
-    $content = $content -replace "assembly: AssemblyVersion.*","assembly: AssemblyVersion(`"$v`")]"
-
-    $content = $content -replace "assembly: AssemblyFileVersion.*","assembly: AssemblyFileVersion(`"$v`")]"
-
-    set-content $filepath $content
+- git clone --branch=master https://github.com/OneGet/oneget.git c:\projects\NuGetTest\OneGet
+- ps: $psversiontable
+- reg ADD "HKLM\Software\Microsoft\StrongName\Verification\Microsoft.PackageManagement.NuGetProvider,31bf3856ad364e35"  /f
+- reg ADD "HKLM\Software\Wow6432Node\Microsoft\StrongName\Verification\Microsoft.PackageManagement.NuGetProvider,31bf3856ad364e35"  /f
 
 
-    # change the version returned in nugetconstant
-
-    $filepath = resolve-path ".\NugetLightConstant.cs"
-
-    $content = (get-content -raw $filepath)
-
-    $content = $content -replace "ProviderVersion.*;","ProviderVersion = `"$v`";"
-
-    set-content $filepath $content
-
-
-    $filepath = resolve-path  ".\provider.manifest"
-
-    $content = (get-content -raw $filepath )
-
-    $content = $content -replace "\s+version='.*'","    version='$v'"
-
-    $content = $content -replace "uniqueId='.*'","uniqueId='nuget.$v'"
-
-    $content = $content -replace "providerVersion='.*'","providerVersion='$v'"
-
-    $content = $content -replace "href='.*'","href='https://oneget.org/Microsoft.PackageManagement.NuGetProvider-$v.dll'"
-
-    set-content $filepath $content
 build:
-  verbosity: minimal
-deploy: off
+  verbosity: normal
+after_build:
+- ps: >-
+    Get-ChildItem "C:\output\release\bin" -Recurse | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName releasebits -Type Auto }
+
+before_test:
+- ps: >-   
+    # Import the Nuget provider just built
+    Import-PackageProvider C:\output\release\bin\Microsoft.PackageManagement.NuGetProvider.dll -force -verbose
+    
+   
+    & "c:\projects\NuGetTest\NuGetProvider\smoketest.tests.ps1"
