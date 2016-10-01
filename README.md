@@ -1,3 +1,6 @@
+![Build status](https://ci.appveyor.com/api/projects/status/vd65p4kpgi0pvto5?svg=true)
+
+
 NuGet provider
 ==============
 
