@@ -20,6 +20,7 @@
     using System.Net;
     using SemanticVersion = Microsoft.PackageManagement.Provider.Utility.SemanticVersion;
     using Microsoft.PackageManagement.Provider.Utility;
+    using Microsoft.PackageManagement.Internal.Utility.Platform;
 
     /// <summary> 
     /// This class drives the Request class that is an interface exposed from the PackageManagement Platform to the provider to use.
@@ -52,6 +53,9 @@
         private HttpClient _httpClient;
         private HttpClient _httpClientWithoutAcceptHeader;
         private bool? _isCalledFromPowerShellGet;
+        private static readonly string _dollarPSHome = "$PSHome";
+        private static bool _isWindow;
+        private static bool _psHomePathInitialized;
 
         internal const string DefaultConfig = @"<?xml version=""1.0""?>
 <configuration>
@@ -173,26 +177,35 @@
                 // or  $env:programfiles\NuGet\Packages\  if you are an admin.
                 try
                 {
-                    var scope = (Scope == null) ? null : Scope.Value;
-                    scope = string.IsNullOrWhiteSpace(scope) ? Constants.AllUsers : scope;
                     string basePath;
-
-                    if (scope.EqualsIgnoreCase(Constants.CurrentUser))
+                    if (!OSInformation.IsWindows)
                     {
-                        // Does not matter whether elevated or not
+                        // there is only 1 installation location by default for linux ("HOME/.local/share/powershell/PackageManagement/NuGet/Packages")
                         basePath = CurrentUserDefaultInstallLocation;
-                    }
-                    else if (ProviderServices.IsElevated)
-                    {
-                        //Scope=AllUser or No Scope but elevated
-                        basePath = AllUserDefaultInstallLocation;
                     }
                     else
                     {
-                        //Scope=AllUser but not elevated
-                        WriteError(ErrorCategory.InvalidOperation, ErrorCategory.InvalidOperation.ToString(),
-                            Constants.Messages.InstallRequiresCurrentUserScopeParameterForNonAdminUser, AllUserDefaultInstallLocation, CurrentUserDefaultInstallLocation);
-                        return string.Empty;
+                        var scope = (Scope == null) ? null : Scope.Value;
+                        scope = string.IsNullOrWhiteSpace(scope) ? Constants.AllUsers : scope;
+
+                        if (scope.EqualsIgnoreCase(Constants.CurrentUser))
+                        {
+                            // Does not matter whether elevated or not
+                            basePath = CurrentUserDefaultInstallLocation;
+                        }
+                        else if (ProviderServices.IsElevated)
+                        {
+                            //Scope=AllUser or No Scope but elevated
+                            basePath = AllUserDefaultInstallLocation;
+                        }
+                        else
+                        {
+                            //Scope=AllUser but not elevated
+                            WriteError(ErrorCategory.InvalidOperation, ErrorCategory.InvalidOperation.ToString(),
+                                Constants.Messages.InstallRequiresCurrentUserScopeParameterForNonAdminUser,
+                                AllUserDefaultInstallLocation, CurrentUserDefaultInstallLocation);
+                            return string.Empty;
+                        }
                     }
 
                     if (!Directory.Exists(basePath))
@@ -214,27 +227,13 @@
 
         internal string CurrentUserDefaultInstallLocation
         {
-            get
-            {
-#if CORECLR
-                return Path.Combine(Environment.GetEnvironmentVariable("LocalAppData"), "PackageManagement", "NuGet", "Packages"); 
-#else
-                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PackageManagement", "NuGet", "Packages");
-#endif
-            }
+            get { return Path.Combine(FileUtility.CurrentUserHomeDirectory, "PackageManagement", "NuGet", "Packages"); }
         
         }
 
         internal string AllUserDefaultInstallLocation
         {
-            get
-            {
-#if CORECLR
-                return Path.Combine(Environment.GetEnvironmentVariable("ProgramFiles"), "NuGet", "Packages"); 
-#else
-                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "NuGet", "Packages");
-#endif
-            }
+            get { return Path.Combine(FileUtility.AllUserHomeDirectory, "PackageManagement", "NuGet", "Packages"); }
         }
 
 
@@ -1316,8 +1315,8 @@
                         }
 
                     } else {
-                        var appdataFolder = Environment.GetEnvironmentVariable("appdata");
-                        _configurationFileLocation = Path.Combine(appdataFolder, "NuGet", NuGetConstant.SettingsFileName);
+
+                        _configurationFileLocation = Path.Combine(FileUtility.CurrentUserHomeDirectory, "NuGet", NuGetConstant.SettingsFileName);
 
                         //create directory if does not exist
                         string dir = Path.GetDirectoryName(_configurationFileLocation);

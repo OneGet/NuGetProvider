@@ -9,13 +9,7 @@
         "publicSign": false,
         "warningsAsErrors": true
    },
-	"configurations": {
-		"Linux": {
-			"buildOptions": {
-				"define": ["UNIX"]
-			}
-		}
-	},
+
 
 	"dependencies": {
 		"System.Management.Automation": "1.0.0-alpha9"
@@ -46,7 +40,8 @@
 					"include": [
 						"../Microsoft.PackageManagement/Providers/Inbox/Common/Extensions/Extensions.cs",
 						"../Microsoft.PackageManagement/Providers/Inbox/Common/Utility/*.cs",
-						"../Microsoft.PackageManagement/Providers/Inbox/Common/Version/*.cs"
+						"../Microsoft.PackageManagement/Providers/Inbox/Common/Version/*.cs",
+						"../Microsoft.PackageManagement/Utility/Platform/OSInformation.cs"
 					],
 					"exclude": ["Resources/Messages.Designer.cs"]
 				},
@@ -67,7 +62,9 @@
 					"include": [
 						"../Microsoft.PackageManagement/Providers/Inbox/Common/Extensions/Extensions.cs",
 						"../Microsoft.PackageManagement/Providers/Inbox/Common/Utility/*.cs",
-						"../Microsoft.PackageManagement/Providers/Inbox/Common/Version/*.cs"
+						"../Microsoft.PackageManagement/Providers/Inbox/Common/Version/*.cs",
+						"../Microsoft.PackageManagement/Utility/Platform/OSInformation.cs"
+
 					],
 					"exclude": ["Resources/Messages.Designer.cs"]
 				},
