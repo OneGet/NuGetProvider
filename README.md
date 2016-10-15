@@ -1,4 +1,5 @@
-![Build status](https://ci.appveyor.com/api/projects/status/vd65p4kpgi0pvto5?svg=true)
+
+[![Build status](https://ci.appveyor.com/api/projects/status/vd65p4kpgi0pvto5?svg=true)](https://ci.appveyor.com/project/jianyunt/nugetprovider)
 
 
 NuGet provider
