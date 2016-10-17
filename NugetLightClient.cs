@@ -333,6 +333,7 @@
                         using (var output = new FileStream(destLocation, FileMode.Create, FileAccess.Write, FileShare.Read))
                         {
                             input.CopyTo(output);
+                            downloadSuccessful = true;
                         }
                     }
                 }

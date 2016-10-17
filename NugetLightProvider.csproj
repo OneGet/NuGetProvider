@@ -93,6 +93,7 @@
     <Compile Include="..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Version\SemanticVersion.cs" />
     <Compile Include="..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Version\SemanticVersionTypeConverter.cs" />
     <Compile Include="..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Extensions\Extensions.cs" />
+    <Compile Include="..\oneget\src\Microsoft.PackageManagement\Utility\Platform\OSInformation.cs" />       
     <Compile Include="NugetLightProvider.cs" />
     <Compile Include="Sdk\Constants.cs" />
     <Compile Include="Sdk\ErrorCategory.cs" />
