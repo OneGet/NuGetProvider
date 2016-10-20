@@ -99,8 +99,13 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     // make a new query based on location
                     query = new Uri(location);
                 }
-                else
+                else 
                 {
+                    if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    {
+                        request.WriteError(ErrorCategory.PermissionDenied, "ValidateUri", Resources.Messages.AccessPermissionDenied, query);
+                    }
+
                     // other status code is wrong
                     return null;
                 }

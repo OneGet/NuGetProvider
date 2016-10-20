@@ -117,6 +117,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AccessPermissionDenied" xml:space="preserve">
+    <value>Cannot access '{0}'. Are you missing 'Credential' parameter in the cmdlet?</value>
+  </data>
   <data name="AlreadyInstalled" xml:space="preserve">
     <value>Package '{0}' is already installed.</value>
   </data>
@@ -176,6 +179,10 @@
   </data>
   <data name="FoundTotalRegisteredSource" xml:space="preserve">
     <value>Found '{0}' registered package source in '{1}' provider.</value>
+  </data>
+  <data name="HashAlgorithmNotSupported" xml:space="preserve">
+    <value>'{0}': hash algorithm '{1}'  is not supported when FIPS enabled.</value>
+    <comment>0 - provider name. 1 - hash algorithm</comment>
   </data>
   <data name="HashNotFound" xml:space="preserve">
     <value>Hash not found for the package '{0}'.</value>

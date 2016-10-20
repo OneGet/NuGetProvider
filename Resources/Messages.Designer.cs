@@ -61,6 +61,15 @@ namespace Microsoft.PackageManagement.NuGetProvider.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot access &apos;{0}&apos;. Are you missing &apos;Credential&apos; parameter in the cmdlet?.
+        /// </summary>
+        internal static string AccessPermissionDenied {
+            get {
+                return ResourceManager.GetString("AccessPermissionDenied", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Package &apos;{0}&apos; is already installed..
         /// </summary>
         internal static string AlreadyInstalled {
@@ -237,6 +246,15 @@ namespace Microsoft.PackageManagement.NuGetProvider.Resources {
         internal static string FoundTotalRegisteredSource {
             get {
                 return ResourceManager.GetString("FoundTotalRegisteredSource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;{0}&apos;: hash algorithm &apos;{1}&apos;  is not supported when FIPS enabled..
+        /// </summary>
+        internal static string HashAlgorithmNotSupported {
+            get {
+                return ResourceManager.GetString("HashAlgorithmNotSupported", resourceCulture);
             }
         }
         
