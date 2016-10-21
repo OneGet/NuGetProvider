@@ -1,4 +1,6 @@
-﻿namespace Microsoft.PackageManagement.NuGetProvider 
+﻿using Microsoft.PackageManagement.Internal.Utility.Platform;
+
+namespace Microsoft.PackageManagement.NuGetProvider 
 {
     using Resources;
     using System;
@@ -14,6 +16,7 @@
     using System.Threading;
     using Microsoft.PackageManagement.Provider.Utility;
     using Microsoft.PackageManagement.NuGetProvider.Utility;
+    using Win32;
 
     /// <summary>
     /// Utility to handle the Find, Install, Uninstall-Package etc operations.
@@ -130,11 +133,26 @@
                     switch (packageHashAlgorithm == null ? string.Empty : packageHashAlgorithm.ToLowerInvariant())
                     {
                         case "sha256":
-                            hashAlgorithm = SHA256.Create();
+#if !CORECLR                          
+                            hashAlgorithm = OSInformation.IsFipsEnabled ? (HashAlgorithm)new SHA256CryptoServiceProvider() : SHA256.Create();
+#else        
+                            hashAlgorithm = SHA256.Create();          
+#endif
                             break;
 
                         case "md5":
-                            hashAlgorithm = MD5.Create();
+
+                            if (OSInformation.IsFipsEnabled)
+                            {
+                                //error out as M5 hash algorithms is not supported 
+                                request.WriteError(ErrorCategory.InvalidOperation, "hashAlgorithm", Resources.Messages.HashAlgorithmNotSupported, NuGetConstant.ProviderName, packageHashAlgorithm);
+                                break;
+                            }
+                            else
+                            {
+                                hashAlgorithm = MD5.Create();
+                            }
+
                             break;
 
                         case "sha512":
@@ -142,7 +160,11 @@
 
                         // default to sha512 algorithm
                         default:
+#if !CORECLR
+                            hashAlgorithm = OSInformation.IsFipsEnabled ? (HashAlgorithm)new SHA512CryptoServiceProvider() : SHA256.Create();
+#else
                             hashAlgorithm = SHA512.Create();
+#endif
                             break;
                     }
 
@@ -333,6 +355,7 @@
                         using (var output = new FileStream(destLocation, FileMode.Create, FileAccess.Write, FileShare.Read))
                         {
                             input.CopyTo(output);
+                            downloadSuccessful = true;
                         }
                     }
                 }

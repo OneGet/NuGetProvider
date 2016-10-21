@@ -1316,7 +1316,7 @@
 
                     } else {
 
-                        _configurationFileLocation = Path.Combine(FileUtility.CurrentUserHomeDirectory, "NuGet", NuGetConstant.SettingsFileName);
+                        _configurationFileLocation = Path.Combine(FileUtility.CurrentUserHomeDirectory, "PackageManagement", "NuGet", NuGetConstant.SettingsFileName);
 
                         //create directory if does not exist
                         string dir = Path.GetDirectoryName(_configurationFileLocation);
