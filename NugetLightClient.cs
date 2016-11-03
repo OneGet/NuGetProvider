@@ -73,7 +73,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             try
             {
                 if (!Directory.Exists(destinationPath)) {
-                    Directory.CreateDirectory(destinationPath);
+                    request.CreateDirectoryInternal(destinationPath);
                     // delete the destinationPath later on if we fail to install and if destinationPath did not exist before
                     directoryToDeleteWhenFailed = destinationPath;
                 }
@@ -82,7 +82,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 string installDir = FileUtility.MakePackageDirectoryName(request.ExcludeVersion.Value, destinationPath, packageName, version);
 
                 if (!Directory.Exists(installDir)) {
-                    Directory.CreateDirectory(installDir);
+                    request.CreateDirectoryInternal(installDir);
 
                     // if directoryToDeleteWhenFailed is null then the destinationPath already exists before so we should not delete it
                     if (String.IsNullOrWhiteSpace(directoryToDeleteWhenFailed))
@@ -1006,7 +1006,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
                 //Create the destination directory if it does not exist
                 if (!Directory.Exists(destinationFilePath)) {
-                    Directory.CreateDirectory(destinationFilePath);
+                    request.CreateDirectoryInternal(destinationFilePath);
                     directoryToDeleteWhenFailed = destinationFilePath;
                 }
 
