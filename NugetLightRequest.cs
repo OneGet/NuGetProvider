@@ -1,4 +1,6 @@
-﻿namespace Microsoft.PackageManagement.NuGetProvider 
+﻿using System.Security.AccessControl;
+
+namespace Microsoft.PackageManagement.NuGetProvider
 {
     using System;
     using System.Text;
@@ -27,6 +29,7 @@
     /// </summary>
     public abstract class NuGetRequest : Request {
         private static readonly Regex _regexFastPath = new Regex(@"\$(?<source>[\w,\+,\/,=]*)\\(?<id>[\w,\+,\/,=]*)\\(?<version>[\w,\+,\/,=]*)\\(?<sources>[\w,\+,\/,=]*)(\\(?<powershellget>[\w,\+,\/,=]*))?");
+
         private static readonly byte[] _nugetBytes = Encoding.UTF8.GetBytes("NuGet");
         private string _configurationFileLocation;
         private XDocument _config;
@@ -41,12 +44,14 @@
         internal readonly Lazy<PackageBase[]> InstalledPackages;
 
         private static IDictionary<string, PackageSource> _registeredPackageSources;
+
         private static IDictionary<string, PackageSource> _checkedUnregisteredPackageSources = new ConcurrentDictionary<string, PackageSource>();
+
         private string _destinationPath = null;
 
         internal Lazy<bool> SkipValidate;  //??? Seems to be a design choice. Why let a user to decide?
         // we cannot enable skipdepedencies because this will break downlevel psget which sets skipdependencies to true
-        internal Lazy<bool> SkipDependencies;     
+        internal Lazy<bool> SkipDependencies;
         //internal ImplictLazy<bool> ContinueOnFailure;
         //internal ImplictLazy<bool> FindByCanonicalId;
 
@@ -159,8 +164,10 @@
         /// <summary>
         /// Package destination path
         /// </summary>
-        internal string Destination {
-            get {
+        internal string Destination
+        {
+            get
+            {
                 if (_destinationPath != null)
                 {
                     return _destinationPath;
@@ -173,44 +180,37 @@
                     return _destinationPath;
                 }
 
-                // If a user does not give -destination for the install, we put the package under $env:USERPROFILE\nuget\packages folder
-                // or  $env:programfiles\NuGet\Packages\  if you are an admin.
+                // If a user does not give -destination for the install, we put the package under $env:USERPROFILE\PackageManagement\nuget\packages folder
+                // or  $env:programfiles\PackageManagement\NuGet\Packages\  if you are an admin.
                 try
                 {
                     string basePath;
-                    if (!OSInformation.IsWindows)
+
+                    var scope = (Scope == null) ? null : Scope.Value;
+                    scope = string.IsNullOrWhiteSpace(scope) ? Constants.AllUsers : scope;
+
+                    if (scope.EqualsIgnoreCase(Constants.CurrentUser))
                     {
-                        // there is only 1 installation location by default for linux ("HOME/.local/share/powershell/PackageManagement/NuGet/Packages")
+                        // Does not matter whether elevated or not
                         basePath = CurrentUserDefaultInstallLocation;
+                    }
+                    else if (ProviderServices.IsElevated)
+                    {
+                        //Scope=AllUser or No Scope but elevated
+                        basePath = AllUserDefaultInstallLocation;
                     }
                     else
                     {
-                        var scope = (Scope == null) ? null : Scope.Value;
-                        scope = string.IsNullOrWhiteSpace(scope) ? Constants.AllUsers : scope;
-
-                        if (scope.EqualsIgnoreCase(Constants.CurrentUser))
-                        {
-                            // Does not matter whether elevated or not
-                            basePath = CurrentUserDefaultInstallLocation;
-                        }
-                        else if (ProviderServices.IsElevated)
-                        {
-                            //Scope=AllUser or No Scope but elevated
-                            basePath = AllUserDefaultInstallLocation;
-                        }
-                        else
-                        {
-                            //Scope=AllUser but not elevated
-                            WriteError(ErrorCategory.InvalidOperation, ErrorCategory.InvalidOperation.ToString(),
-                                Constants.Messages.InstallRequiresCurrentUserScopeParameterForNonAdminUser,
-                                AllUserDefaultInstallLocation, CurrentUserDefaultInstallLocation);
-                            return string.Empty;
-                        }
+                        //Scope=AllUser but not elevated
+                        WriteError(ErrorCategory.InvalidOperation, ErrorCategory.InvalidOperation.ToString(),
+                            Constants.Messages.InstallRequiresCurrentUserScopeParameterForNonAdminUser,
+                            AllUserDefaultInstallLocation, CurrentUserDefaultInstallLocation);
+                        return string.Empty;
                     }
 
                     if (!Directory.Exists(basePath))
                     {
-                        Directory.CreateDirectory(basePath);
+                        CreateDirectoryInternal(basePath);
                     }
                     _destinationPath = basePath;
                     return basePath;
@@ -218,22 +218,59 @@
                 catch (Exception e)
                 {
                     e.Dump(this);
-                    WriteError(ErrorCategory.InvalidArgument, "Destination", Constants.Messages.MissingRequiredParameter, "Destination");
+                    WriteError(ErrorCategory.InvalidArgument, "Destination", Constants.Messages.MissingRequiredParameter,
+                        "Destination");
                     return string.Empty;
-                }                
+                }
             }
         }
 
-
+        internal void CreateDirectoryInternal(string dirPath)
+        {
+            try
+            {
+                if (!Directory.Exists(dirPath))
+                {
+                    Directory.CreateDirectory(dirPath);
+                }
+            }
+            catch (System.UnauthorizedAccessException ex)
+            {
+                if (OSInformation.IsWindows)
+                {
+                    //a user specifies 'AllUsers' that requires Admin privilege. However his console gets launched by non-elevated.
+                    WriteError(ErrorCategory.InvalidOperation, ErrorCategory.InvalidOperation.ToString(),
+                        Resources.Messages.InstallRequiresCurrentUserScopeParameterForNonAdminUser,
+                        dirPath, CurrentUserDefaultInstallLocation);
+                }
+                else
+                {
+                    WriteError(ErrorCategory.InvalidOperation, ErrorCategory.InvalidOperation.ToString(),
+                        Resources.Messages.InstallRequiresCurrentUserScopeParameterForNonSudoUser,
+                        dirPath, CurrentUserDefaultInstallLocation);                                      
+                }
+                Verbose(ex.Message);
+                throw;
+            }
+        }
         internal string CurrentUserDefaultInstallLocation
         {
-            get { return Path.Combine(FileUtility.CurrentUserHomeDirectory, "PackageManagement", "NuGet", "Packages"); }
-        
+            get
+            {            
+                var path = Path.Combine(OSInformation.LocalAppDataDirectory, "PackageManagement", "NuGet", "Packages");
+                Debug("CurrentUserDefaultInstallLocation: {0}", path);
+                return path;
+            }
         }
 
         internal string AllUserDefaultInstallLocation
         {
-            get { return Path.Combine(FileUtility.AllUserHomeDirectory, "PackageManagement", "NuGet", "Packages"); }
+            get
+            {
+                var path = Path.Combine(OSInformation.ProgramFilesDirectory, "PackageManagement", "NuGet", "Packages");
+                Debug("AllUserDefaultInstallLocation: {0}", path);
+                return path;
+            }
         }
 
 
@@ -1316,14 +1353,21 @@
 
                     } else {
 
-                        _configurationFileLocation = Path.Combine(FileUtility.CurrentUserHomeDirectory, "PackageManagement", "NuGet", NuGetConstant.SettingsFileName);
+                        var appdataFolder = Environment.GetEnvironmentVariable("appdata");
+                        if (!OSInformation.IsWindows)
+                        {
+                            // $Home/.config
+                            appdataFolder = OSInformation.ConfigLocation;
+                        }
+
+                        _configurationFileLocation = Path.Combine(appdataFolder, "NuGet", NuGetConstant.SettingsFileName);
 
                         //create directory if does not exist
                         string dir = Path.GetDirectoryName(_configurationFileLocation);
                         if (dir != null && !Directory.Exists(dir))
                         {
                             Debug(Resources.Messages.CreateDirectory, dir);
-                            Directory.CreateDirectory(dir);
+                            CreateDirectoryInternal(dir);
                         }
                         //create place holder config file
                         if (!File.Exists(_configurationFileLocation))

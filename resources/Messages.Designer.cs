@@ -331,6 +331,24 @@ namespace Microsoft.PackageManagement.NuGetProvider.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Administrator rights are required to install packages in &apos;{0}&apos;. Log on to the computer with an account that has Administrator rights, and then try again, or install &apos;{1}&apos; by adding &quot;-Scope CurrentUser&quot; to your command. You can also try running the Windows PowerShell session with elevated rights (Run as Administrator)..
+        /// </summary>
+        internal static string InstallRequiresCurrentUserScopeParameterForNonAdminUser {
+            get {
+                return ResourceManager.GetString("InstallRequiresCurrentUserScopeParameterForNonAdminUser", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sudo rights are required to install packages in &apos;{0}&apos;. Try again by launching powershell with sudo, or install in &apos;{1}&apos; by adding &quot;-Scope CurrentUser&quot; to your command. .
+        /// </summary>
+        internal static string InstallRequiresCurrentUserScopeParameterForNonSudoUser {
+            get {
+                return ResourceManager.GetString("InstallRequiresCurrentUserScopeParameterForNonSudoUser", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The file extension &apos;{0}&apos; is not valid. The required file extension is &apos;.nupkg&apos;..
         /// </summary>
         internal static string InvalidFileExtension {

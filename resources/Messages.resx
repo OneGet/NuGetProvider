@@ -208,6 +208,12 @@
   <data name="InstallingOrDownloadingPackage" xml:space="preserve">
     <value>{0}ing package '{1}'</value>
   </data>
+  <data name="InstallRequiresCurrentUserScopeParameterForNonAdminUser" xml:space="preserve">
+    <value>Administrator rights are required to install packages in '{0}'. Log on to the computer with an account that has Administrator rights, and then try again, or install '{1}' by adding "-Scope CurrentUser" to your command. You can also try running the Windows PowerShell session with elevated rights (Run as Administrator).</value>
+  </data>
+  <data name="InstallRequiresCurrentUserScopeParameterForNonSudoUser" xml:space="preserve">
+    <value>Sudo rights are required to install packages in '{0}'. Try again by launching powershell with sudo, or install in '{1}' by adding "-Scope CurrentUser" to your command. </value>
+  </data>
   <data name="InvalidFileExtension" xml:space="preserve">
     <value>The file extension '{0}' is not valid. The required file extension is '.nupkg'.</value>
   </data>
