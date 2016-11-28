@@ -75,7 +75,7 @@
 				}
 			},
 			"dependencies": {
-				"System.Linq.Parallel": "4.0.1"
+				"System.Linq.Parallel": "4.3.0-preview1-24530-04"
 			}
 		}
 	}
