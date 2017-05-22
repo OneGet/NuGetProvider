@@ -1054,8 +1054,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 request.Progress(progressTracker.ProgressID, progressTracker.ConvertPercentToProgress(0.85), string.Format(CultureInfo.CurrentCulture, Messages.ReadingManifest));
 
                  //Read the package manifest and return the package object
-                var nuspec = FileUtility.GetFiles(installedFolder, "*.nuspec", recursive: false)
-                    .FirstOrDefault(each => Path.GetFileNameWithoutExtension(each).EqualsIgnoreCase(packageName));
+                var nuspec = FileUtility.GetFiles(installedFolder, "*.*", recursive: false)
+                    .FirstOrDefault(each => Path.GetFileName(each).EqualsIgnoreCase(packageName + NuGetConstant.ManifestExtension));
 
                 PackageBase package = PackageUtility.ProcessNuspec(nuspec);
 
@@ -1067,7 +1067,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 };
 
                 // Delete the nuspec file
-                if (File.Exists(nuspec))
+                if (!string.IsNullOrWhiteSpace(nuspec) && File.Exists(nuspec))
                 {
                     FileUtility.DeleteFile(nuspec, false);
                 }
