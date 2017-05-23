@@ -1054,8 +1054,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 request.Progress(progressTracker.ProgressID, progressTracker.ConvertPercentToProgress(0.85), string.Format(CultureInfo.CurrentCulture, Messages.ReadingManifest));
 
                  //Read the package manifest and return the package object
+                var packageNameAndId = packageName + NuGetConstant.ManifestExtension;
                 var nuspec = FileUtility.GetFiles(installedFolder, "*.*", recursive: false)
-                    .FirstOrDefault(each => Path.GetFileName(each).EqualsIgnoreCase(packageName + NuGetConstant.ManifestExtension));
+                    .FirstOrDefault(each => Path.GetFileName(each).EqualsIgnoreCase(packageNameAndId));
 
                 PackageBase package = PackageUtility.ProcessNuspec(nuspec);
 
