@@ -1054,7 +1054,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 request.Progress(progressTracker.ProgressID, progressTracker.ConvertPercentToProgress(0.85), string.Format(CultureInfo.CurrentCulture, Messages.ReadingManifest));
 
                  //Read the package manifest and return the package object
-                string nuspec = Path.Combine(installedFolder, packageName) + NuGetConstant.ManifestExtension;
+                var nuspecFileName = packageName + NuGetConstant.ManifestExtension;
+                var nuspec = FileUtility.GetFiles(installedFolder, "*.*", recursive: false)
+                    .FirstOrDefault(each => Path.GetFileName(each).EqualsIgnoreCase(nuspecFileName));
 
                 PackageBase package = PackageUtility.ProcessNuspec(nuspec);
 
@@ -1066,12 +1068,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 };
 
                 // Delete the nuspec file
-                //Get a package file path
-                var nuspecFilePath = Path.Combine(installedFolder, packageName + NuGetConstant.ManifestExtension);
-
-                if (File.Exists(nuspecFilePath))
+                if (!string.IsNullOrWhiteSpace(nuspec) && File.Exists(nuspec))
                 {
-                    FileUtility.DeleteFile(nuspecFilePath, false);
+                    FileUtility.DeleteFile(nuspec, false);
                 }
 
                 request.Debug(Messages.DebugInfoReturnCall, "NuGetClient", "InstallPackageLocal");
