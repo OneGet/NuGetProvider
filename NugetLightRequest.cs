@@ -58,9 +58,6 @@ namespace Microsoft.PackageManagement.NuGetProvider
         private HttpClient _httpClient;
         private HttpClient _httpClientWithoutAcceptHeader;
         private bool? _isCalledFromPowerShellGet;
-        private static readonly string _dollarPSHome = "$PSHome";
-        private static bool _isWindow;
-        private static bool _psHomePathInitialized;
 
         internal const string DefaultConfig = @"<?xml version=""1.0""?>
 <configuration>

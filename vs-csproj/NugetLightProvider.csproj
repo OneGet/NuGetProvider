@@ -18,7 +18,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <DelaySign>true</DelaySign>
@@ -31,14 +31,14 @@
     <!-- Defaults to .Net 4.0 -->
     <TargetFrameworkVersion Condition="$(TargetFrameworkVersion) == '' Or $(TargetFrameworkVersion) == '*Undefined*'">v4.0</TargetFrameworkVersion>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <OutputPath>$(SolutionRootDir)output\$(Configuration)\bin\</OutputPath>
-    <BaseIntermediateOutputPath>$(SolutionRootDir)intermediate\$(TargetFrameworkVersion.Replace(".",""))\$(Configuration)\$(AssemblyName)\</BaseIntermediateOutputPath>
+    <OutputPath>$(SolutionRootDir)..\output\$(Configuration)\bin\</OutputPath>
+    <BaseIntermediateOutputPath>$(SolutionRootDir)..\intermediate\$(TargetFrameworkVersion.Replace(".",""))\$(Configuration)\$(AssemblyName)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DocumentationFile>$(OutputPath)$(AssemblyName).XML</DocumentationFile>
     <NoWarn>1591</NoWarn>
     <RestorePackages>true</RestorePackages>
     <DefineConstants>FRAMEWORK$(TargetFrameworkVersion.Replace(".",""))</DefineConstants>
-    <OutputRelativePath>output\$(TargetFrameworkVersion.Replace(".",""))\$(Configuration)\bin\</OutputRelativePath>
+    <OutputRelativePath>..\output\$(TargetFrameworkVersion.Replace(".",""))\$(Configuration)\bin\</OutputRelativePath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -47,13 +47,13 @@
     <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>output\v40\Debug\bin\Microsoft.PackageManagement.NuGetProvider.xml</DocumentationFile>
+    <DocumentationFile>..\output\v40\Debug\bin\Microsoft.PackageManagement.NuGetProvider.xml</DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
-    <OutputPath>output\bin\</OutputPath>
+    <OutputPath>..\output\bin\</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
+    <Optimize>false</Optimize>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -62,54 +62,55 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="NuGetExtensions.cs" />
-    <Compile Include="NugetLightConstant.cs" />
-    <Compile Include="Package\PackageDependencySet.cs" />
-    <Compile Include="Package\PackageName.cs">
+    <Compile Include="..\NuGetExtensions.cs" />
+    <Compile Include="..\NugetLightConstant.cs" />
+    <Compile Include="..\Package\PackageDependencySet.cs" />
+    <Compile Include="..\Package\PackageName.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Repository\HttpClientPackageRepository.cs" />
-    <Compile Include="Package\IPackage.cs" />
-    <Compile Include="Package\IPackageName.cs" />
-    <Compile Include="Repository\IPackageRepository.cs" />
-    <Compile Include="Repository\IPackageRepositoryFactory.cs" />
-    <Compile Include="Repository\LocalPackageRepository.cs" />
-    <Compile Include="Package\PackageBase.cs" />
-    <Compile Include="NugetLightClient.cs" />
-    <Compile Include="Package\PackageDependency.cs" />
-    <Compile Include="Utility\NuGetPathUtility.cs" />
-    <Compile Include="Utility\PackageUtility.cs" />
-    <Compile Include="Package\PackageItem.cs" />
-    <Compile Include="Repository\PackageRepositoryFactory.cs" />
-    <Compile Include="PackageSource.cs" />
-    <Compile Include="NugetLightRequest.cs">
+    <Compile Include="..\Properties\AssemblyInfo.cs" />
+    <Compile Include="..\Repository\HttpClientPackageRepository.cs" />
+    <Compile Include="..\Package\IPackage.cs" />
+    <Compile Include="..\Package\IPackageName.cs" />
+    <Compile Include="..\Repository\IPackageRepository.cs" />
+    <Compile Include="..\Repository\IPackageRepositoryFactory.cs" />
+    <Compile Include="..\Repository\LocalPackageRepository.cs" />
+    <Compile Include="..\Package\PackageBase.cs" />
+    <Compile Include="..\NugetLightClient.cs" />
+    <Compile Include="..\Package\PackageDependency.cs" />
+    <Compile Include="..\Utility\NuGetPathUtility.cs" />
+    <Compile Include="..\Utility\PackageUtility.cs" />
+    <Compile Include="..\Package\PackageItem.cs" />
+    <Compile Include="..\Repository\PackageRepositoryFactory.cs" />
+    <Compile Include="..\PackageSource.cs" />
+    <Compile Include="..\NugetLightRequest.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Utility\PathUtility.cs" />
-    <Compile Include="..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Utility\FileUtility.cs" />
-    <Compile Include="..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Utility\XmlUtility.cs" />
-    <Compile Include="..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Version\DependencyVersion.cs" />
-    <Compile Include="..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Version\SemanticVersion.cs" />
-    <Compile Include="..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Version\SemanticVersionTypeConverter.cs" />
-    <Compile Include="..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Extensions\Extensions.cs" />
-    <Compile Include="..\oneget\src\Microsoft.PackageManagement\Utility\Platform\OSInformation.cs" />       
-    <Compile Include="NugetLightProvider.cs" />
-    <Compile Include="Sdk\Constants.cs" />
-    <Compile Include="Sdk\ErrorCategory.cs" />
-    <Compile Include="Sdk\Request.cs" />
-    <Compile Include="Resources\Messages.Designer.cs">
+    <Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Utility\PathUtility.cs" />
+    <Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Utility\FileUtility.cs" />
+    <Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Utility\XmlUtility.cs" />
+    <Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Version\DependencyVersion.cs" />
+    <Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Version\SemanticVersion.cs" />
+    <Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Version\SemanticVersionTypeConverter.cs" />
+    <Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Extensions\Extensions.cs" />
+    <Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Utility\Platform\OSInformation.cs" />
+    <Compile Include="..\NugetLightProvider.cs" />
+    <Compile Include="..\Sdk\Constants.cs" />
+    <Compile Include="..\Sdk\ErrorCategory.cs" />
+    <Compile Include="..\Sdk\Request.cs" />
+    <Compile Include="..\Resources\Messages.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Messages.resx</DependentUpon>
     </Compile>
-    <Compile Include="Utility\ProgressTracker.cs" />
+    <Compile Include="..\Utility\ProgressTracker.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\Messages.resx">
+    <EmbeddedResource Include="..\Resources\Messages.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Messages.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
+      <CustomToolNamespace>Microsoft.PackageManagement.NuGetProvider.Resources</CustomToolNamespace>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
@@ -133,17 +134,17 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <None Include="35MSSharedLib1024.snk" />
-    <None Include="provider.manifest" />
+    <None Include="..\35MSSharedLib1024.snk" />
+    <None Include="..\provider.manifest" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>:Locate MT.EXE Tool:
-set MTEXE=$(ProjectDir)\..\oneget\tools\mt.exe
+set MTEXE=$(ProjectDir)\..\..\oneget\tools\mt.exe
 
 :Run the tool to add the manifest to the binary.
 
-"%25MTEXE%25" -manifest $(ProjectDir)provider.manifest -outputresource:$(TargetPath);#101</PostBuildEvent>
+"%25MTEXE%25" -manifest $(ProjectDir)..\provider.manifest -outputresource:$(TargetPath);#101</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.

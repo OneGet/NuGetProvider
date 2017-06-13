@@ -17,8 +17,8 @@ install:
 - reg ADD "HKLM\Software\Wow6432Node\Microsoft\StrongName\Verification\Microsoft.PackageManagement.NuGetProvider,31bf3856ad364e35"  /f
 
 
-build:
-  verbosity: normal
+build_script:
+  - msbuild "c:\projects\NuGetTest\NuGetProvider\vs-csproj\NugetLightProvider.csproj" /verbosity:normal
 after_build:
 - ps: >-
     Get-ChildItem "C:\output\release\bin" -Recurse | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName releasebits -Type Auto }
