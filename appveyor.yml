@@ -18,7 +18,7 @@ install:
 
 
 build_script:
-  - msbuild "c:\projects\NuGetTest\NuGetProvider\vs-csproj\NugetLightProvider.csproj" /verbosity:normal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+  - msbuild "c:\projects\NuGetTest\NuGetProvider\vs-csproj\NugetLightProvider.csproj" /verbosity:normal
 after_build:
 - ps: >-
     Get-ChildItem "C:\output\release\bin" -Recurse | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName releasebits -Type Auto }
