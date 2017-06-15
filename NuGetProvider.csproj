@@ -45,9 +45,9 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
-    <Compile Remove="Resources\Messages.Designer.cs" />
-    <EmbeddedResource Remove="Resources\Messages.resx" />
-    <Compile Include="..\Microsoft.PackageManagement\Providers\Inbox\Common\Extensions\Extensions.cs;..\Microsoft.PackageManagement\Providers\Inbox\Common\Utility\*.cs;..\Microsoft.PackageManagement\Providers\Inbox\Common\Version\*.cs;..\Microsoft.PackageManagement\Utility\Platform\OSInformation.cs" Exclude="Resources\Messages.Designer.cs;bin\**;obj\**;**\*.xproj;packages\**" />
+    <Compile Remove="resources\Messages.Designer.cs" />
+    <EmbeddedResource Remove="resources\Messages.resx" />
+    <Compile Include="..\Microsoft.PackageManagement\providers\inbox\Common\Extensions\Extensions.cs;..\Microsoft.PackageManagement\providers\inbox\Common\Utility\*.cs;..\Microsoft.PackageManagement\providers\inbox\Common\Version\*.cs;..\Microsoft.PackageManagement\Utility\Platform\OSInformation.cs" Exclude="resources\Messages.Designer.cs;bin\**;obj\**;**\*.xproj;packages\**" />
   </ItemGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
@@ -56,9 +56,9 @@
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
-    <Compile Remove="Resources\Messages.Designer.cs" />
-    <EmbeddedResource Remove="Resources\Messages.resx" />
-    <Compile Include="..\Microsoft.PackageManagement\Providers\Inbox\Common\Extensions\Extensions.cs;..\Microsoft.PackageManagement\Providers\Inbox\Common\Utility\*.cs;..\Microsoft.PackageManagement\Providers\Inbox\Common\Version\*.cs;..\Microsoft.PackageManagement\Utility\Platform\OSInformation.cs" Exclude="Resources\Messages.Designer.cs;bin\**;obj\**;**\*.xproj;packages\**" />
+    <Compile Remove="resources\Messages.Designer.cs" />
+    <EmbeddedResource Remove="resources\Messages.resx" />
+    <Compile Include="..\Microsoft.PackageManagement\providers\inbox\Common\Extensions\Extensions.cs;..\Microsoft.PackageManagement\providers\inbox\Common\Utility\*.cs;..\Microsoft.PackageManagement\providers\inbox\Common\Version\*.cs;..\Microsoft.PackageManagement\Utility\Platform\OSInformation.cs" Exclude="resources\Messages.Designer.cs;bin\**;obj\**;**\*.xproj;packages\**" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
