@@ -12,27 +12,37 @@
             get { return _default;}
         }
 
-        public virtual IPackageRepository CreateRepository(string packageSource, NuGetRequest request)
+        public IPackageRepository CreateRepository(PackageRepositoryCreateParameters parms)
         {
-            if (packageSource == null)
+            if (parms == null)
             {
-                throw new ArgumentNullException("packageSource");
+                throw new ArgumentNullException("parms");
+            }
+
+            if (parms.Location == null)
+            {
+                throw new ArgumentNullException("parms.Location");
+            }
+            
+            if (parms.Request == null)
+            {
+                throw new ArgumentNullException("parms.Request");
             }
 
             // we cannot call new uri on file path on linux because it will error out
-            if (System.IO.Directory.Exists(packageSource))
+            if (System.IO.Directory.Exists(parms.Location))
             {
-                return new LocalPackageRepository(packageSource, request);
+                return new LocalPackageRepository(parms.Location, parms.Request);
             }
 
-            Uri uri = new Uri(packageSource);
+            Uri uri = new Uri(parms.Location);
 
             if (uri.IsFile)
             {
-                return new LocalPackageRepository(uri.LocalPath, request);
+                return new LocalPackageRepository(uri.LocalPath, parms.Request);
             }
 
-            return new HttpClientPackageRepository(packageSource, request);
+            return new NuGetPackageRepository(parms);
         }
     }
 }

@@ -20,6 +20,8 @@
         /// <param name="physicalPath"></param>
         public LocalPackageRepository(string physicalPath, NuGetRequest request) {
             _path = physicalPath;
+            // Might want to pass in physicalPath if package discovery is required
+            this.ResourceProvider = NuGetResourceCollectionFactory.GetResources(null, request);
         }
 
         /// <summary>
@@ -30,6 +32,8 @@
                 return _path;
             }
         }
+
+        public INuGetResourceCollection ResourceProvider { get; private set; }
 
         /// <summary>
         /// Finding the packages in the file repository
@@ -165,9 +169,9 @@
         /// <param name="version">Package Name</param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public virtual IPackage FindPackage(string packageId, SemanticVersion version, NuGetRequest request)
+        public virtual IPackage FindPackage(NuGetSearchContext findContext, NuGetRequest request)
         {
-            return FindPackage(OpenPackage, packageId, version, request);
+            return FindPackage(OpenPackage, findContext.PackageInfo.Id, findContext.RequiredVersion, request);
         }
 
         /// <summary>
@@ -286,9 +290,10 @@
         /// <param name="packageId">Package Id</param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public IEnumerable<IPackage> FindPackagesById(string packageId, NuGetRequest request)
+        public NuGetSearchResult FindPackagesById(NuGetSearchContext findContext, NuGetRequest request)
         {
-            return FindPackagesById(OpenPackage, packageId, request);
+            IEnumerable<IPackage> packages =  FindPackagesById(OpenPackage, findContext.PackageInfo.Id, request);
+            return findContext.MakeResult(packages);
         }
 
         /// <summary>
@@ -333,20 +338,20 @@
         /// <param name="searchTerm">The Searchterm</param>
         /// <param name="nugetRequest"></param>
         /// <returns></returns>
-        public IEnumerable<IPackage> Search(string searchTerm, NuGetRequest nugetRequest)
+        public NuGetSearchResult Search(NuGetSearchContext searchContext, NuGetRequest nugetRequest)
         {
-            var packages = SearchImpl(searchTerm, nugetRequest);
+            var packages = SearchImpl(this.ResourceProvider.GetSearchQueryDelegate(searchContext.SearchTerms), nugetRequest);
             if (packages == null) {
-                return Enumerable.Empty<IPackage>();
+                return searchContext.MakeResult(Enumerable.Empty<IPackage>());
             }
 
             if (nugetRequest != null && nugetRequest.AllVersions.Value) {
                 //return whatever we can find
-                return packages;
+                return searchContext.MakeResult(packages);
             }
 
             //return the latest version
-            return packages.GroupBy(p => p.Id).Select(each => each.OrderByDescending(pp => pp.Version).FirstOrDefault());
+            return searchContext.MakeResult(packages.GroupBy(p => p.Id).Select(each => each.OrderByDescending(pp => pp.Version).FirstOrDefault()));
         }
 
         private IEnumerable<IPackage> SearchImpl(string searchTerm, NuGetRequest nugetRequest)
@@ -375,5 +380,9 @@
                 }
             }
         }
+
+        public bool DownloadPackage(PublicObjectView packageView, string destination, NuGetRequest request) => this.ResourceProvider.FilesFeed.DownloadPackage(packageView, destination, request);
+
+        public bool InstallPackage(PublicObjectView packageView, NuGetRequest request) => this.ResourceProvider.FilesFeed.InstallPackage(packageView, request);
     }
 }

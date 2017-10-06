@@ -1,6 +1,8 @@
-
 namespace Microsoft.PackageManagement.NuGetProvider  
 {
+    using System;
+    using System.Text.RegularExpressions;
+
     internal static class Constants
     {
         #region copy common-constants-implementation /internal/public
@@ -12,7 +14,69 @@ namespace Microsoft.PackageManagement.NuGetProvider
         public readonly static string[] FeaturePresent = new string[0];
         internal const string CurrentUser = "CurrentUser";
         internal const string AllUsers = "AllUsers";
-
+        internal const string SearchPageCount = "200";
+        internal const int SearchPageCountInt = 200;
+        internal const string PackageIdTemplateParameter = "{id}";
+        internal const string PackageVersionTemplateParameter = "{version}";
+        internal const string PackageIdLowerTemplateParameter = "{id-lower}";
+        internal const string PackageVersionLowerTemplateParameter = "{version-lower}";
+        internal const string PackageIdQueryParam = "id";
+        internal const string PrereleaseQueryParam = "prerelease";
+        internal const string QueryQueryParam = "q";
+        internal const string TakeQueryParam = "take";
+        internal const string SkipQueryParam = "skip";
+        /// <summary>
+        /// {0} = base URL
+        /// {1} = id lower
+        /// {2} = version lower
+        /// {3} = / or empty, depending on last character of {0}
+        /// </summary>
+        internal const string NuGetDownloadUriTemplate = "{0}{3}{1}/{2}/{1}.{2}.nupkg";
+        internal static readonly Regex MyGetFeedRegex = new Regex("myget.org/F/(.*?)/api/v3/index.json");
+        /// <summary>
+        /// {0} = Scheme
+        /// {1} = Host
+        /// {2} = Feed name
+        /// </summary>
+        internal const string MyGetGalleryUriTemplate = "{0}://{1}/feed/{2}/package/nuget/{{id-lower}}/{{version-lower}}";
+        internal const string NuGetGalleryUriTemplate = "https://www.nuget.org/packages/{id-lower}/{version-lower}";
+        internal const string DummyPackageId = "FoooBarr";
+        internal const string PackageServiceType = "PackageDisplayMetadataUriTemplate";
+        internal const string PackageVersionServiceType = "PackageVersionDisplayMetadataUriTemplate";
+        internal const string RegistrationBaseServiceType = "RegistrationsBaseUrl";
+        internal const string SearchQueryServiceType = "SearchQueryService";
+        internal const string PackageBaseAddressType = "PackageBaseAddress";
+        internal const string ReportAbuseAddressType = "ReportAbuseUriTemplate";
+        internal const string AutocompleteAddressType = "SearchAutocompleteService";
+        internal const string TagQueryParam = "tag";
+        internal const string DescriptionQueryParam = "description";
+        internal const string NuGetOrgHost = "nuget.org";
+        internal const string MyGetOrgHost = "myget.org";
+        internal const string XmlStartContent = "<?xml";
+        /// <summary>
+        /// {0} = base URL for registrations
+        /// {1} = / or empty
+        /// {2} = package id lowercase
+        /// </summary>
+        internal const string NuGetRegistrationUrlTemplatePackage = "{0}{1}{2}/index.json";
+        /// <summary>
+        /// {0} = base URL for registrations
+        /// {1} = / or empty
+        /// {2} = package id lowercase
+        /// {3} = package version lowercase
+        /// </summary>
+        internal const string NuGetRegistrationUrlTemplatePackageVersion = "{0}{1}{2}/{3}.json";
+        internal const string SemVerLevelQueryParam = "semverlevel";
+        internal const string SemVerLevel2 = "2.0.0";
+        /// <summary>
+        /// {0} = base URL for blob store
+        /// {1} = / or empty
+        /// {2} = package id
+        /// </summary>
+        internal const string VersionIndexTemplate = "{0}{1}{2}/index.json";
+        internal const int DefaultRetryCount = 3;
+        internal static readonly Func<int, int> SimpleBackoffStrategy = (int oldSleep) => { if (oldSleep <= 0) { return 1000; } else { return oldSleep * 2; } };
+        internal const int DefaultExtraPackageCount = 5;
         //public static string[] Empty = new string[0];
 
         internal static class Features

@@ -30,7 +30,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             {
                 if (!IsSourceAFile)
                 {
-                    return _repository ?? (_repository = PackageRepositoryFactory.Default.CreateRepository(Location, Request));
+                    return _repository ?? (_repository = PackageRepositoryFactory.Default.CreateRepository(new PackageRepositoryCreateParameters(Location, Request)));
                 }
                 return null;
             }

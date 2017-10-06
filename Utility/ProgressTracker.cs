@@ -8,6 +8,7 @@ namespace Microsoft.PackageManagement.NuGetProvider.Utility
 {
     internal class ProgressTracker
     {
+        private static Random randomGen = new Random();
         internal int ProgressID;
         internal int StartPercent;
         internal int EndPercent;
@@ -37,6 +38,17 @@ namespace Microsoft.PackageManagement.NuGetProvider.Utility
 
             // if parent tracker is null, use 0 for parent id, else use the progressid of parent tracker
             return new ProgressTracker(request.StartProgress(parentTracker == null ? 0 : parentTracker.ProgressID, message));
+        }
+
+        /// <summary>
+        /// Generate a random progress ID that's not 0 (0 is used a lot, so it's dangerous to use here). Eventually we want to change this to
+        /// GetUniqueId
+        /// but we need a way to remove used IDs first.
+        /// </summary>
+        /// <returns>Random progress ID in the range (0, Int32.MaxValue)</returns>
+        internal static int GetRandomId()
+        {
+            return randomGen.Next(1, Int32.MaxValue);
         }
     }
 }
