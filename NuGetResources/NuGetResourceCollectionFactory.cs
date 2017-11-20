@@ -47,6 +47,11 @@ namespace Microsoft.PackageManagement.NuGetProvider
         public static INuGetResourceCollection GetResources(string baseUrl, RequestWrapper request)
         {
             object cacheLock;
+            if (String.IsNullOrEmpty(baseUrl))
+            {
+                return NuGetResourceCollectionLocal.Make();
+            }
+
             if (!sessionResourceCollectionCacheLocks.ContainsKey(baseUrl))
             {
                 lock (sessionResourceCollectionCacheLocks)
@@ -74,51 +79,43 @@ namespace Microsoft.PackageManagement.NuGetProvider
         private static INuGetResourceCollection GetResourcesImpl(string baseUrl, RequestWrapper request)
         {
             INuGetResourceCollection res = null;
-
-            if (String.IsNullOrEmpty(baseUrl))
+            HttpClient client = request.GetClient();
+            HttpResponseMessage response = PathUtility.GetHttpResponse(client, baseUrl, (() => request.IsCanceled()),
+                ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg));
+            if (!response.IsSuccessStatusCode)
             {
-                res = NuGetResourceCollectionLocal.Make();
+                throw new Exception(Resources.Messages.NuGetEndpointDiscoveryFailed);
+            }
+
+            string content = new StreamReader(NuGetClient.DownloadDataToStream(baseUrl, request)).ReadToEnd();
+            // If the response starts with the magic XML header, it's v2
+            if (content.StartsWith(Constants.XmlStartContent))
+            {
+                res = NuGetResourceCollection2.Make(baseUrl);
             }
             else
             {
-                HttpClient client = request.GetClient();
-                HttpResponseMessage response = PathUtility.GetHttpResponse(client, baseUrl, (() => request.IsCanceled()),
-                    ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg));
-                if (!response.IsSuccessStatusCode)
+                try
                 {
-                    throw new Exception(Resources.Messages.NuGetEndpointDiscoveryFailed);
-                }
-
-                string content = new StreamReader(NuGetClient.DownloadDataToStream(baseUrl, request)).ReadToEnd();
-                // If the response starts with the magic XML header, it's v2
-                if (content.StartsWith(Constants.XmlStartContent))
-                {
-                    res = NuGetResourceCollection2.Make(baseUrl);
-                }
-                else
-                {
-                    try
+                    dynamic root = DynamicJsonParser.Parse(content);
+                    string version = root.version;
+                    if (version != null && version.StartsWith("3."))
                     {
-                        dynamic root = DynamicJsonParser.Parse(content);
-                        string version = root.version;
-                        if (version != null && version.StartsWith("3."))
-                        {
-                            // v3 feed
-                            res = NuGetResourceCollection3.Make(root, baseUrl, request);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Exception discoveryException = new Exception(Resources.Messages.NuGetEndpointDiscoveryFailed, ex);
-                        throw discoveryException;
+                        // v3 feed
+                        res = NuGetResourceCollection3.Make(root, baseUrl, request);
                     }
                 }
-
-                if (res == null)
+                catch (Exception ex)
                 {
-                    // Couldn't figure out what this is
-                    throw new Exception(Resources.Messages.NuGetEndpointDiscoveryFailed);
+                    Exception discoveryException = new Exception(Resources.Messages.NuGetEndpointDiscoveryFailed, ex);
+                    throw discoveryException;
                 }
+            }
+
+            if (res == null)
+            {
+                // Couldn't figure out what this is
+                throw new Exception(Resources.Messages.NuGetEndpointDiscoveryFailed);
             }
 
             return res;
