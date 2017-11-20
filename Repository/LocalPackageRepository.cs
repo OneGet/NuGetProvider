@@ -21,7 +21,7 @@
         public LocalPackageRepository(string physicalPath, NuGetRequest request) {
             _path = physicalPath;
             // Might want to pass in physicalPath if package discovery is required
-            this.ResourceProvider = NuGetResourceCollectionFactory.GetResources(null, request);
+            this.ResourceProvider = NuGetResourceCollectionFactory.GetResources(physicalPath, request);
         }
 
         /// <summary>
