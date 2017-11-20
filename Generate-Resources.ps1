@@ -127,6 +127,8 @@ internal class {0} {{
 $className = "Microsoft.PackageManagement.NuGetProvider.Resources.Messages"
 $moduleName = "NuGetProvider"
 $xmlFilePath = Join-Path -Path $PSScriptRoot -ChildPath resources | Join-Path -ChildPath Messages.resx
+$newResxFile = Join-Path $PSScriptRoot -ChildPath resources | Join-Path -ChildPath "$className.resx"
+Copy-Item $xmlFilePath $newResxFile -Force
 $outputFilePath = Join-Path -Path $PSScriptRoot -ChildPath gen | Join-Path -ChildPath "$className.cs"
 $xml = [xml](Get-Content -raw $xmlFilePath)
 $genSource = Get-StronglyTypeCsFileForResx -xml $xml -ClassName $className -moduleName $moduleName
