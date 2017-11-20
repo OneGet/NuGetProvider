@@ -94,4 +94,8 @@
     <Compile Remove="NuGetResources\IPackageFilter.cs" />
   </ItemGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(EMBEDPROVIDERMANIFEST)' == 'true'">
+    <Exec Command="echo Embedding provider manifest" />
+	<Exec Command="$(ProjectDir)\..\..\tools\mt.exe -manifest $(ProjectDir)\provider.manifest -outputresource:$(TargetPath);#101" />
+  </Target>
 </Project>
