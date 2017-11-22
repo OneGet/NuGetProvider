@@ -249,7 +249,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                             // This should be PackageFeed3
                             // There should be a better way to reuse this function
                             NuGetPackageFeed3 packageFeed3 = (NuGetPackageFeed3)this.ResourcesCollection.PackagesFeed;
-                            PackageBase packageVersionPackage = packageFeed3.Find(registrationUrl, individualPackageSearchContext, request, true).FirstOrDefault();
+                            PackageBase packageVersionPackage = packageFeed3.Find(registrationUrl, individualPackageSearchContext, request, true, false).FirstOrDefault();
                             if (packageVersionPackage != null)
                             {
                                 if (versionDownloadCount.HasValue)

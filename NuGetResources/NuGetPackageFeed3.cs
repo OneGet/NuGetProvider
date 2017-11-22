@@ -42,11 +42,25 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <param name="registrationUrl"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        internal IEnumerable<PackageBase> Find(string registrationUrl, NuGetSearchContext context, RequestWrapper request, bool allowPrerelease)
+        internal IEnumerable<PackageBase> Find(string registrationUrl, NuGetSearchContext context, RequestWrapper request, bool allowPrerelease, bool finalAttempt)
         {
             request.Debug(Messages.DebugInfoCallMethod3, "NuGetPackageFeed3", "Find", registrationUrl);
             List<PackageBase> packages = null;
-            Stream s = NuGetClient.DownloadDataToStream(registrationUrl, request, ignoreNullResponse: true);
+            PackageBase cachedPackage;
+            if (!registrationUrl.Contains("index.json") && ConcurrentInMemoryCache.Instance.TryGet<PackageBase>(registrationUrl, out cachedPackage))
+            {
+                if (cachedPackage == null)
+                {
+                    return packages;
+                }
+                else
+                {
+                    packages = new List<PackageBase>() { cachedPackage };
+                    return packages;
+                }
+            }
+
+            Stream s = NuGetClient.DownloadDataToStream(registrationUrl, request, ignoreNullResponse: true, tries: 1);
             if (s != null)
             {
                 packages = new List<PackageBase>();
@@ -141,32 +155,26 @@ namespace Microsoft.PackageManagement.NuGetProvider
                                     }
                                 }
                             }
-                        }
-                    }
-                    else
-                    {
-                        catalogUrls.Add(this.ResourcesCollection.CatalogUrlConverter.Make(root));
-                    }
 
-                    foreach (string catalogUrl in catalogUrls)
-                    {
-                        Stream catalogResponseStream = NuGetClient.DownloadDataToStream(catalogUrl, request);
-                        if (catalogResponseStream != null)
-                        {
-                            string content = new StreamReader(catalogResponseStream).ReadToEnd();
-                            dynamic catalogContent = DynamicJsonParser.Parse(content);
-                            if ((packageSemanticVersions == null || packageSemanticVersions.Contains(new SemanticVersion(catalogContent.version))))
+                            foreach (string catalogUrl in catalogUrls)
                             {
-                                PackageBase pb = this.ResourcesCollection.PackageConverter.Make(DynamicJsonParser.Parse(content), context.PackageInfo);
+                                PackageBase pb = GetPackageFromCatalogUrl(catalogUrl, request, packageSemanticVersions, context);
                                 if (pb != null)
                                 {
                                     packages.Add(pb);
                                 }
                             }
                         }
-                        else
+                    }
+                    else
+                    {
+                        PackageBase pb = ConcurrentInMemoryCache.Instance.GetOrAdd<PackageBase>(registrationUrl, () =>
                         {
-                            request.Warning(Messages.CouldNotGetResponseFromQuery, catalogUrl);
+                            return GetPackageFromCatalogUrl(this.ResourcesCollection.CatalogUrlConverter.Make(root), request, packageSemanticVersions, context);
+                        });
+                        if (pb != null)
+                        {
+                            packages.Add(pb);
                         }
                     }
                 }
@@ -190,9 +198,37 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         latestPackage.IsLatestVersion = true;
                     }
                 }
+            } else if (finalAttempt)
+            {
+                // This is the last retry of this URL. It's definitely not a good one.
+                ConcurrentInMemoryCache.Instance.GetOrAdd<PackageBase>(registrationUrl, () => null);
             }
 
             return packages;
+        }
+
+        private PackageBase GetPackageFromCatalogUrl(string catalogUrl, RequestWrapper request, HashSet<SemanticVersion> packageSemanticVersions, NuGetSearchContext context)
+        {
+            Stream catalogResponseStream = NuGetClient.DownloadDataToStream(catalogUrl, request);
+            if (catalogResponseStream != null)
+            {
+                string content = new StreamReader(catalogResponseStream).ReadToEnd();
+                dynamic catalogContent = DynamicJsonParser.Parse(content);
+                if ((packageSemanticVersions == null || packageSemanticVersions.Contains(new SemanticVersion(catalogContent.version))))
+                {
+                    PackageBase pb = this.ResourcesCollection.PackageConverter.Make(DynamicJsonParser.Parse(content), context.PackageInfo);
+                    if (pb != null)
+                    {
+                        return pb;
+                    }
+                }
+            }
+            else
+            {
+                request.Warning(Messages.CouldNotGetResponseFromQuery, catalogUrl);
+            }
+
+            return null;
         }
 
         private HashSet<SemanticVersion> FilterVersionsByRequirements(NuGetSearchContext findContext, PackageEntryInfo packageInfo)
@@ -264,17 +300,23 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 this.ResourcesCollection.FilesFeed.GetVersionInfo(findContext.PackageInfo, request);
             }
 
-            foreach (string candidateUrl in GetCandidateUrls(findContext.PackageInfo.Id, findContext.RequiredVersion, baseUrl))
+            bool urlHit = false;
+            int attempts = 3;
+            while (!urlHit && attempts-- > 0)
             {
-                IEnumerable<IPackage> packages = Find(candidateUrl, findContext, request, allowPrerelease);
-                if (packages != null)
+                foreach (string candidateUrl in GetCandidateUrls(findContext.PackageInfo.Id, findContext.RequiredVersion, baseUrl))
                 {
-                    foreach (IPackage package in packages)
+                    IEnumerable<IPackage> packages = Find(candidateUrl, findContext, request, allowPrerelease, attempts == 0);
+                    if (packages != null)
                     {
-                        yield return package;
-                    }
+                        urlHit = true;
+                        foreach (IPackage package in packages)
+                        {
+                            yield return package;
+                        }
 
-                    break;
+                        break;
+                    }
                 }
             }
         }

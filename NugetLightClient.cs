@@ -1211,14 +1211,14 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <param name="query">Uri query</param>
         /// <param name="request">An object passed in from the PackageManagement platform that contains APIs that can be used to interact with it </param>
         /// <returns></returns>
-        internal static Stream DownloadDataToStream(string query, RequestWrapper request, bool ignoreNullResponse = false)
+        internal static Stream DownloadDataToStream(string query, RequestWrapper request, bool ignoreNullResponse = false, int tries = 3)
         {
             request.Debug(Messages.DownloadingPackage, query);
 
             var client = request.GetClientWithHeaders();
 
             var response = PathUtility.GetHttpResponse(client, query, (()=> request.IsCanceled()),
-                ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg)=> request.Verbose(msg), (msg)=> request.Debug(msg));
+                ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg)=> request.Verbose(msg), (msg)=> request.Debug(msg), remainingTry: tries);
 
             // Check that response was successful or throw exception
             if (response == null || !response.IsSuccessStatusCode)

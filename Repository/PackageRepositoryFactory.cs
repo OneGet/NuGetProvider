@@ -29,20 +29,25 @@
                 throw new ArgumentNullException("parms.Request");
             }
 
-            // we cannot call new uri on file path on linux because it will error out
-            if (System.IO.Directory.Exists(parms.Location))
+            IPackageRepository repository = ConcurrentInMemoryCache.Instance.GetOrAdd<IPackageRepository>(parms.Location, () =>
             {
-                return new LocalPackageRepository(parms.Location, parms.Request);
-            }
+                // we cannot call new uri on file path on linux because it will error out
+                if (System.IO.Directory.Exists(parms.Location))
+                {
+                    return new LocalPackageRepository(parms.Location, parms.Request);
+                }
 
-            Uri uri = new Uri(parms.Location);
+                Uri uri = new Uri(parms.Location);
 
-            if (uri.IsFile)
-            {
-                return new LocalPackageRepository(uri.LocalPath, parms.Request);
-            }
+                if (uri.IsFile)
+                {
+                    return new LocalPackageRepository(uri.LocalPath, parms.Request);
+                }
 
-            return new NuGetPackageRepository(parms);
+                return new NuGetPackageRepository(parms);
+            });
+
+            return repository;
         }
     }
 }
