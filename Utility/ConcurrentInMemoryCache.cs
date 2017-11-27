@@ -15,6 +15,7 @@
 namespace Microsoft.PackageManagement.NuGetProvider
 {
     using System;
+    using System.Collections.Generic;
 
     internal class ConcurrentInMemoryCache
     {
@@ -27,7 +28,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
         }
 
-        private System.Collections.Concurrent.ConcurrentDictionary<string, object> cache = new System.Collections.Concurrent.ConcurrentDictionary<string, object>();
+        private Dictionary<string, object> cache = new Dictionary<string, object>();
         public T GetOrAdd<T>(string key, Func<T> constructor)
         {
             T res = default(T);
@@ -37,12 +38,13 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 {
                     if (!cache.ContainsKey(key))
                     {
-                        res = (T)cache.GetOrAdd(key, constructor());
+                        res = constructor();
+                        cache[key] = res;
                     }
                 }
             }
 
-            return (T)cache.GetOrAdd(key, constructor());
+            return (T)cache[key];
         }
 
         public bool TryGet<T>(string key, out T val)

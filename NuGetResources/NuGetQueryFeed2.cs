@@ -45,10 +45,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 return searchContext.MakeResult();
             }
             
-            return Search(searchContext, new RequestWrapper(nugetRequest), nugetRequest.AllowPrereleaseVersions.Value);
+            return Search(searchContext, new RequestWrapper(nugetRequest));
         }
 
-        public NuGetSearchResult Search(NuGetSearchContext searchContext, RequestWrapper request, bool allowPrerelease)
+        public NuGetSearchResult Search(NuGetSearchContext searchContext, RequestWrapper request)
         {
             request.Debug(Messages.DebugInfoCallMethod, "NuGetSearchFeed2", "Search");
             if (request == null)

@@ -62,7 +62,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             //validate uri source location
             return ValidateUri(srcUri, request) != null;
         }
-
+        
         /// <summary>
         /// Returns the validated uri. Returns null if we cannot validate it
         /// </summary>

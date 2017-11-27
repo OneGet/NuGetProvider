@@ -41,12 +41,12 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
         public bool DownloadPackage(PublicObjectView packageView, string destination, NuGetRequest request)
         {
-            return DownloadPackage(packageView, destination, new RequestWrapper(request), request.AllowPrereleaseVersions.Value);
+            return DownloadPackage(packageView, destination, new RequestWrapper(request));
         }
 
         public bool InstallPackage(PublicObjectView packageView, NuGetRequest request)
         {
-            return InstallPackage(packageView, new RequestWrapper(request), request.AllowPrereleaseVersions.Value);
+            return InstallPackage(packageView, new RequestWrapper(request));
         }
 
         public bool IsAvailable(RequestWrapper request) => true;
@@ -274,7 +274,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
         }
 
-        public bool DownloadPackage(PublicObjectView packageView, string destination, RequestWrapper request, bool allowPrerelease)
+        public bool DownloadPackage(PublicObjectView packageView, string destination, RequestWrapper request)
         {
             try
             {
@@ -290,7 +290,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
         }
 
-        public bool InstallPackage(PublicObjectView packageView, RequestWrapper request, bool allowPrerelease)
+        public bool InstallPackage(PublicObjectView packageView, RequestWrapper request)
         {
             try
             {

@@ -38,7 +38,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <param name="destination">Where to download package to.</param>
         /// <param name="request">Current request.</param>
         /// <returns>True if download was successful; false otherwise.</returns>
-        bool DownloadPackage(PublicObjectView packageView, string destination, RequestWrapper request, bool allowPrerelease);
+        bool DownloadPackage(PublicObjectView packageView, string destination, RequestWrapper request);
 
         /// <summary>
         /// Install a package and its dependencies to a common location.
@@ -54,7 +54,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <param name="packageView">PublicObjectView containing PackageItem object.</param>
         /// <param name="request">Current request.</param>
         /// <returns>True if install was successful; false otherwise.</returns>
-        bool InstallPackage(PublicObjectView packageView, RequestWrapper request, bool allowPrerelease);
+        bool InstallPackage(PublicObjectView packageView, RequestWrapper request);
 
         /// <summary>
         /// Creates or gets the content download URI from a given package.

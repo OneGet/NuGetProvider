@@ -229,6 +229,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 }
             }
 
+            
+
             if (jsonObject.HasProperty("tags"))
             {
                 if (jsonObject.tags is ArrayList)
@@ -283,6 +285,12 @@ namespace Microsoft.PackageManagement.NuGetProvider
             if (this.ResourcesCollection.GalleryFeed != null)
             {
                 pb.GalleryDetailsUrl = new Uri(this.ResourcesCollection.GalleryFeed.MakeGalleryUri(pb.Id, pb.Version));
+            }
+
+            if (jsonObject.HasProperty("catalogentry"))
+            {
+                // Sometimes some of the package's properties are moved to the catalogEntry object
+                Make(jsonObject.catalogentry, pb);
             }
 
             return pb;

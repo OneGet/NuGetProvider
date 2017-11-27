@@ -1286,7 +1286,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
                             {
                                 try
                                 {
-                                    isValidated = NuGetPathUtility.ValidateSourceUri(SupportedSchemes, srcUri, this);
+                                    // Only validate once
+                                    isValidated = ConcurrentInMemoryCache.Instance.GetOrAdd(String.Format(CultureInfo.InvariantCulture, "SelectedSources:{0}", srcUri.AbsoluteUri), () => NuGetPathUtility.ValidateSourceUri(SupportedSchemes, srcUri, this));
                                 }
                                 catch (Exception ex)
                                 {
@@ -1549,10 +1550,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     MaximumVersion = String.IsNullOrWhiteSpace(maximumVersion) ? null : new SemanticVersion(maximumVersion),
                     AllowPrerelease = AllowPrereleaseVersions.Value,
                     AllVersions = AllVersions.Value,
-                    EnableDeepMetadataBypass = AllVersions.Value // Bypass deep metadata when allversions is requested
+                    EnableDeepMetadataBypass = AllVersions.Value, // Bypass deep metadata when allversions is requested
                 }, request);
                 var pkgs = findResult.Result;
-
 
                 // exact version is required if required version is not null or empty OR maxversion == minversion and min and max inclusive are true
                 bool exactVersionRequired = (!string.IsNullOrWhiteSpace(requiredVersion))
@@ -1598,13 +1598,12 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
                 pkgs = FilterOnContains(pkgs);
                 pkgs = FilterOnTags(pkgs);
-                IEnumerable<PackageItem> results;
                 if (findResult.VersionPostFilterRequired)
                 {
                     pkgs = FilterOnVersion(pkgs, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive);
                 }
 
-                results = pkgs.Select(pkg => new PackageItem
+                IEnumerable<PackageItem> results = pkgs.Select(pkg => new PackageItem
                 {
                     Package = pkg,
                     PackageSource = source,
@@ -1833,7 +1832,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             {
                 return pkgs;
             }
-            
+
             return pkgs.Where(each => each.Description.IndexOf(Contains.Value, StringComparison.OrdinalIgnoreCase) > -1 ||
                 each.Id.IndexOf(Contains.Value, StringComparison.OrdinalIgnoreCase) > -1);
         }
@@ -1862,7 +1861,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 {
                     return Enumerable.Empty<PackageItem>();
                 }
-                
+
                 var searchTerm = Contains.Value ?? string.Empty;
 
                 List<NuGetSearchTerm> searchTerms = new List<NuGetSearchTerm>();
@@ -1875,6 +1874,12 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 StringBuilder searchTermsDebugMessageBuilder = new StringBuilder();
                 if (!String.IsNullOrWhiteSpace(name) && WildcardPattern.ContainsWildcardCharacters(name))
                 {
+                    if (AllVersions.Value)
+                    {
+                        WriteError(ErrorCategory.InvalidArgument, name, Messages.AllVersionsSearchNotSupported);
+                        return Enumerable.Empty<PackageItem>();
+                    }
+
                     searchTerms.Add(new NuGetSearchTerm(NuGetSearchTerm.NuGetSearchTermType.OriginalPSPattern, name));
 
                     // NuGet does not support PowerShell/POSIX style wildcards and supports only '*' in searchTerm 

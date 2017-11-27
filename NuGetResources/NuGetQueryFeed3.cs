@@ -65,10 +65,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
         public NuGetSearchResult Search(NuGetSearchContext searchContext, NuGetRequest nugetRequest)
         {
-            return Search(searchContext, new RequestWrapper(nugetRequest), nugetRequest.AllowPrereleaseVersions.Value);
+            return Search(searchContext, new RequestWrapper(nugetRequest));
         }
 
-        public NuGetSearchResult Search(NuGetSearchContext searchContext, RequestWrapper request, bool allowPrerelease)
+        public NuGetSearchResult Search(NuGetSearchContext searchContext, RequestWrapper request)
         {
             // This is a search scenario, so it should be safe to skip some metadata for the sake of performance
             searchContext.EnableDeepMetadataBypass = true;
@@ -95,7 +95,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
         {
             // First execute the actual search
             HashSet<string> foundPackageIds = new HashSet<string>();
-            IEnumerable<IPackage> searchResults = NuGetWebUtility.GetResults<dynamic, PackageBase>(request, (dynamic root) =>
+            return NuGetWebUtility.GetResults<dynamic, PackageBase>(request, (dynamic root) =>
             {
                 long res = -1;
                 if (root.HasProperty("totalhits"))
@@ -123,42 +123,6 @@ namespace Microsoft.PackageManagement.NuGetProvider
             {
                 return DynamicJsonParser.Parse(content);
             }, Constants.SearchPageCountInt);
-
-            bool useAutoCompleteWarning = true;
-            foreach (IPackage package in searchResults)
-            {
-                useAutoCompleteWarning = false;
-                yield return package;
-            }
-
-            // Then double check the autocomplete feed
-            if (useAutoCompleteWarning && this.ResourcesCollection.AutoCompleteFeed != null)
-            {
-                bool writeWarning = false;
-                StringBuilder sb = new StringBuilder();
-                List<string> packageIds = new List<string>();
-                foreach (string packageIdRaw in this.ResourcesCollection.AutoCompleteFeed.Autocomplete(new NuGetSearchTerm(NuGetSearchTerm.NuGetSearchTermType.AutoComplete, searchTerm.Text), request, true, new System.Management.Automation.WildcardPattern("*" + searchTerm.Text + "*")).Take(Constants.DefaultExtraPackageCount))
-                {
-                    writeWarning = true;
-                    sb.AppendFormat(String.Format(CultureInfo.CurrentCulture, "{0},", packageIdRaw));
-                    packageIds.Add(packageIdRaw);
-                }
-
-                if (writeWarning)
-                {
-                    string substring = LongestCommonSubstring(packageIds.ToArray());
-                    string originalTerm = "jso";
-                    if (!String.IsNullOrEmpty(substring) && substring.Length > searchTerm.Text.Length)
-                    {
-                        originalTerm = searchTerm.Text;
-                    } else
-                    {
-                        substring = "json";
-                    }
-
-                    request.Warning(Messages.ExtraPackagesFoundInSearch, baseUrl, searchTerm.Text, sb.ToString().Trim(','), substring, originalTerm);
-                }
-            }
         }
 
         private IEnumerable<IEnumerable<PackageBase>> GetPackageCollectionsForSearchResult(dynamic searchResult, NuGetSearchContext searchContext, NuGetSearchTerm searchTerm, HashSet<string> foundPackageIds, RequestWrapper request)
@@ -213,7 +177,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 {
                     // Go to the registration index of this package first. This allows us to bypass "deep" (but required) metadata in certain cases.
                     NuGetPackageFeed3 packageFeed3 = (NuGetPackageFeed3)this.ResourcesCollection.PackagesFeed;
-                    NuGetSearchResult result = packageFeed3.Find(individualPackageSearchContext, request, searchContext.AllowPrerelease);
+                    NuGetSearchResult result = packageFeed3.Find(individualPackageSearchContext, request);
                     foreach (PackageBase pb in result.Result.Cast<PackageBase>())
                     {
                         yield return pb;
@@ -249,7 +213,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                             // This should be PackageFeed3
                             // There should be a better way to reuse this function
                             NuGetPackageFeed3 packageFeed3 = (NuGetPackageFeed3)this.ResourcesCollection.PackagesFeed;
-                            PackageBase packageVersionPackage = packageFeed3.Find(registrationUrl, individualPackageSearchContext, request, true, false).FirstOrDefault();
+                            PackageBase packageVersionPackage = packageFeed3.Find(registrationUrl, individualPackageSearchContext, request, true).FirstOrDefault();
                             if (packageVersionPackage != null)
                             {
                                 if (versionDownloadCount.HasValue)

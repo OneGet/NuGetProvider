@@ -51,10 +51,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
         public IEnumerable<string> Autocomplete(NuGetSearchTerm autocompleteSearchTerm, RequestWrapper request, bool allowPrerelease)
         {
-            return Autocomplete(autocompleteSearchTerm, request, allowPrerelease, acceptedPattern: null);
+            return Autocomplete(autocompleteSearchTerm, request, acceptedPattern: null, allowPrerelease: allowPrerelease);
         }
 
-        public IEnumerable<string> Autocomplete(NuGetSearchTerm autocompleteSearchTerm, RequestWrapper request, bool allowPrerelease, WildcardPattern acceptedPattern)
+        public IEnumerable<string> Autocomplete(NuGetSearchTerm autocompleteSearchTerm, RequestWrapper request, WildcardPattern acceptedPattern, bool allowPrerelease)
         {
             try
             {

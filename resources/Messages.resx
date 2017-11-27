@@ -379,7 +379,7 @@
   <data name="VersionIndexDownloadFailed" xml:space="preserve">
     <value>Failed to download package '{0}' version index to determine list of versions.</value>
   </data>
-  <data name="ExtraPackagesFoundInSearch" xml:space="preserve">
-    <value>No packages were matched by the NuGet search endpoint '{0}' using search term '{1}'. However, the following packages are examples of potential matches: '{2}'. To obtain the full metadata for these packages, try again with a longer search term. Using full words (like '{3}' instead of '{4}') is more likely to yield results.</value>
+  <data name="AllVersionsSearchNotSupported" xml:space="preserve">
+    <value>When searching using one or more wildcards, the AllVersions switch is not supported. This policy is in place to help alleviate stress on search services.</value>
   </data>
 </root>

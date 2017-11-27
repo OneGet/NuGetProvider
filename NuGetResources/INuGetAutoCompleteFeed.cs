@@ -24,6 +24,6 @@ namespace Microsoft.PackageManagement.NuGetProvider
     {
         IEnumerable<string> Autocomplete(NuGetSearchTerm autocompleteSearchTerm, NuGetRequest request);
         IEnumerable<string> Autocomplete(NuGetSearchTerm autocompleteSearchTerm, RequestWrapper networkAccess, bool allowPrerelease);
-        IEnumerable<string> Autocomplete(NuGetSearchTerm autocompleteSearchTerm, RequestWrapper networkAccess, bool allowPrerelease, WildcardPattern acceptedPattern);
+        IEnumerable<string> Autocomplete(NuGetSearchTerm autocompleteSearchTerm, RequestWrapper networkAccess, WildcardPattern acceptedPattern, bool allowPrerelease);
     }
 }

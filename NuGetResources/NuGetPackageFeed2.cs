@@ -45,7 +45,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
         public NuGetSearchResult Find(NuGetSearchContext findContext, NuGetRequest request)
         {
-            return Find(findContext, new RequestWrapper(request), request.AllowPrereleaseVersions.Value);
+            return Find(findContext, new RequestWrapper(request));
         }
 
         public bool IsAvailable(RequestWrapper request)
@@ -66,7 +66,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             return valid;
         }
 
-        public NuGetSearchResult Find(NuGetSearchContext findContext, RequestWrapper request, bool allowPrerelease)
+        public NuGetSearchResult Find(NuGetSearchContext findContext, RequestWrapper request)
         {
             if (string.IsNullOrWhiteSpace(findContext.PackageInfo.Id))
             {

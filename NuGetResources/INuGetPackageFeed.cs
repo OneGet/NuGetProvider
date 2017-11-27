@@ -33,6 +33,6 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <param name="findContext">Contains search info</param>
         /// <param name="request">Current request.</param>
         /// <returns>All matching packages.</returns>
-        NuGetSearchResult Find(NuGetSearchContext findContext, RequestWrapper request, bool allowPrerelease);
+        NuGetSearchResult Find(NuGetSearchContext findContext, RequestWrapper request);
     }
 }

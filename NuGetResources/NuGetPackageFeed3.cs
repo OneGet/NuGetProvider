@@ -33,7 +33,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
         public NuGetSearchResult Find(NuGetSearchContext findContext, NuGetRequest request)
         {
-            return Find(findContext, new RequestWrapper(request), request.AllowPrereleaseVersions.Value);
+            return Find(findContext, new RequestWrapper(request));
         }
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <param name="registrationUrl"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        internal IEnumerable<PackageBase> Find(string registrationUrl, NuGetSearchContext context, RequestWrapper request, bool allowPrerelease, bool finalAttempt)
+        internal IEnumerable<PackageBase> Find(string registrationUrl, NuGetSearchContext context, RequestWrapper request, bool finalAttempt)
         {
             request.Debug(Messages.DebugInfoCallMethod3, "NuGetPackageFeed3", "Find", registrationUrl);
             List<PackageBase> packages = null;
@@ -80,9 +80,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                             break;
                         }
                     }
-
-                    // List of all catalogs we need to check
-                    List<string> catalogUrls = new List<string>();
+                    
                     if (context.PackageInfo.AllVersions.Count == 0)
                     {
                         // Only when the version list is restricted is this method usually faster
@@ -99,15 +97,19 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     {
                         // This is a registration index, like: "https://api.nuget.org/v3/registration3/json/index.json"
                         // Get all versions from files service
-                        if (!context.AllVersions && packageSemanticVersions != null)
+                        // In addition, when DeepMetadataBypass is enabled, we MUST use the registration index to get package info
+                        // If a call to -Name -RequiredVersion is done, DeepMetadataBypass will never be enabled (for now)
+                        // If we wanted, we could enable this by checking if !isRegistrationType && context.EnableDeepMetadataBypass, then call into Find with the registration index URL
+                        if (!context.AllVersions && packageSemanticVersions != null && !context.EnableDeepMetadataBypass)
                         {
                             foreach (SemanticVersion packageVersion in packageSemanticVersions)
                             {
                                 NuGetSearchResult result = this.ResourcesCollection.PackagesFeed.Find(new NuGetSearchContext()
                                 {
                                     PackageInfo = context.PackageInfo,
-                                    RequiredVersion = packageVersion
-                                }, request, allowPrerelease);
+                                    RequiredVersion = packageVersion,
+                                    EnableDeepMetadataBypass = context.EnableDeepMetadataBypass
+                                }, request);
                                 PackageBase package = result.Result == null ? null : result.Result.FirstOrDefault() as PackageBase;
                                 if (package != null)
                                 {
@@ -117,6 +119,11 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         }
                         else
                         {
+                            // Going to collect versions from the registration index in here
+                            // Map of package version -> either PackageBase (if context.EnableDeepMetadataBypass) or catalog URL
+                            Dictionary<SemanticVersion, object> catalogObjects = new Dictionary<SemanticVersion, object>();
+                            // If the version list hasn't been built yet, we can build it from the registration page instead of using FilesFeed
+                            bool buildPackageInfoVersions = context.PackageInfo.AllVersions.Count == 0;
                             // Fallback to catalog crawling in these cases:
                             //      - Bypass deep metadata
                             //      - Getting version list failed
@@ -136,32 +143,45 @@ namespace Microsoft.PackageManagement.NuGetProvider
                                 }
                                 foreach (dynamic packageEntry in actualCatalogPage.items)
                                 {
-                                    // Check if the package should be retrieved/made
-                                    if ((packageSemanticVersions == null || packageSemanticVersions.Contains(new SemanticVersion(packageEntry.catalogentry.version))))
+                                    SemanticVersion version = new SemanticVersion(packageEntry.catalogentry.version);
+                                    if (buildPackageInfoVersions)
                                     {
+                                        context.PackageInfo.AddVersion(version);
+                                    }
                                         if (context.EnableDeepMetadataBypass)
                                         {
                                             // Bypass retrieving "deep" (but required) metadata like packageHash
                                             PackageBase pb = this.ResourcesCollection.PackageConverter.Make(packageEntry.catalogentry, context.PackageInfo);
                                             if (pb != null)
                                             {
-                                                packages.Add(pb);
+                                                catalogObjects[version] = pb;
                                             }
                                         }
                                         else
                                         {
-                                            catalogUrls.Add(this.ResourcesCollection.CatalogUrlConverter.Make(packageEntry));
+                                            catalogObjects[version] = this.ResourcesCollection.CatalogUrlConverter.Make(packageEntry);
                                         }
-                                    }
                                 }
                             }
 
-                            foreach (string catalogUrl in catalogUrls)
+                            packageSemanticVersions = FilterVersionsByRequirements(context, context.PackageInfo);
+                            foreach (SemanticVersion version in packageSemanticVersions)
                             {
-                                PackageBase pb = GetPackageFromCatalogUrl(catalogUrl, request, packageSemanticVersions, context);
-                                if (pb != null)
+                                if (!catalogObjects.ContainsKey(version))
                                 {
-                                    packages.Add(pb);
+                                    continue;
+                                }
+
+                                if (context.EnableDeepMetadataBypass)
+                                {
+                                    packages.Add((PackageBase)catalogObjects[version]);
+                                } else
+                                {
+                                    PackageBase pb = GetPackageFromCatalogUrl((string)catalogObjects[version], request, packageSemanticVersions, context);
+                                    if (pb != null)
+                                    {
+                                        packages.Add(pb);
+                                    }
                                 }
                             }
                         }
@@ -280,12 +300,12 @@ namespace Microsoft.PackageManagement.NuGetProvider
             return set;
         }
 
-        private IEnumerable<IPackage> FindImpl(NuGetSearchContext findContext, RequestWrapper request, bool allowPrerelease)
+        private IEnumerable<IPackage> FindImpl(NuGetSearchContext findContext, RequestWrapper request)
         {
             request.Debug(Messages.DebugInfoCallMethod3, "NuGetPackageFeed3", "FindImpl", findContext.PackageInfo.Id);
             try
             {
-                return base.Execute<IEnumerable<IPackage>>((baseUrl) => GetPackagesForBaseUrl(baseUrl, findContext, request, allowPrerelease));
+                return base.Execute<IEnumerable<IPackage>>((baseUrl) => GetPackagesForBaseUrl(baseUrl, findContext, request));
             }
             finally
             {
@@ -293,20 +313,15 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
         }
 
-        private IEnumerable<IPackage> GetPackagesForBaseUrl(string baseUrl, NuGetSearchContext findContext, RequestWrapper request, bool allowPrerelease)
+        private IEnumerable<IPackage> GetPackagesForBaseUrl(string baseUrl, NuGetSearchContext findContext, RequestWrapper request)
         {
-            if (findContext.PackageInfo.AllVersions.Count == 0)
-            {
-                this.ResourcesCollection.FilesFeed.GetVersionInfo(findContext.PackageInfo, request);
-            }
-
             bool urlHit = false;
             int attempts = 3;
             while (!urlHit && attempts-- > 0)
             {
                 foreach (string candidateUrl in GetCandidateUrls(findContext.PackageInfo.Id, findContext.RequiredVersion, baseUrl))
                 {
-                    IEnumerable<IPackage> packages = Find(candidateUrl, findContext, request, allowPrerelease, attempts == 0);
+                    IEnumerable<IPackage> packages = Find(candidateUrl, findContext, request, attempts == 0);
                     if (packages != null)
                     {
                         urlHit = true;
@@ -351,7 +366,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 Find(new NuGetSearchContext()
                 {
                     PackageInfo = new PackageEntryInfo(Constants.DummyPackageId)
-                }, request, false);
+                }, request);
                 return true;
             }
             catch (Exception)
@@ -360,7 +375,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
         }
 
-        public NuGetSearchResult Find(NuGetSearchContext findContext, RequestWrapper request, bool allowPrerelease)
+        public NuGetSearchResult Find(NuGetSearchContext findContext, RequestWrapper request)
         {
             request.Debug(Messages.DebugInfoCallMethod3, "NuGetPackageFeed3", "Find", findContext.PackageInfo.Id);
             if (System.Management.Automation.WildcardPattern.ContainsWildcardCharacters(findContext.PackageInfo.Id))
@@ -369,7 +384,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 return findContext.MakeResult(new List<IPackage>());
             }
 
-            NuGetSearchResult result = findContext.MakeResult(FindImpl(findContext, request, allowPrerelease), versionPostFilterRequired: false);
+            NuGetSearchResult result = findContext.MakeResult(FindImpl(findContext, request), versionPostFilterRequired: false);
             request.Debug(Messages.DebugInfoReturnCall, "NuGetPackageFeed3", "Find");
             return result;
         }
