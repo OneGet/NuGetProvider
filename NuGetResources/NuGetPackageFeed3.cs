@@ -80,7 +80,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                             break;
                         }
                     }
-                    
+
                     if (context.PackageInfo.AllVersions.Count == 0)
                     {
                         // Only when the version list is restricted is this method usually faster
@@ -148,19 +148,31 @@ namespace Microsoft.PackageManagement.NuGetProvider
                                     {
                                         context.PackageInfo.AddVersion(version);
                                     }
-                                        if (context.EnableDeepMetadataBypass)
+
+                                    bool hasCatalogEntry = packageEntry.HasProperty("catalogentry");
+                                    if (context.EnableDeepMetadataBypass || !hasCatalogEntry)
+                                    {
+                                        // Bypass retrieving "deep" (but required) metadata like packageHash
+                                        // Also do this if there's no catalog entry
+                                        PackageBase pb = null;
+                                        if (packageEntry.HasProperty("catalogentry"))
                                         {
-                                            // Bypass retrieving "deep" (but required) metadata like packageHash
-                                            PackageBase pb = this.ResourcesCollection.PackageConverter.Make(packageEntry.catalogentry, context.PackageInfo);
-                                            if (pb != null)
-                                            {
-                                                catalogObjects[version] = pb;
-                                            }
-                                        }
-                                        else
+                                            pb = this.ResourcesCollection.PackageConverter.Make(packageEntry.catalogentry, context.PackageInfo);
+                                        } else
                                         {
-                                            catalogObjects[version] = this.ResourcesCollection.CatalogUrlConverter.Make(packageEntry);
+                                            // In some implementations (lookin' at you MyGet) there's no catalogEntry object
+                                            pb = this.ResourcesCollection.PackageConverter.Make(packageEntry, context.PackageInfo);
                                         }
+
+                                        if (pb != null)
+                                        {
+                                            catalogObjects[version] = pb;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        catalogObjects[version] = this.ResourcesCollection.CatalogUrlConverter.Make(packageEntry);
+                                    }
                                 }
                             }
 
@@ -175,7 +187,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
                                 if (context.EnableDeepMetadataBypass)
                                 {
                                     packages.Add((PackageBase)catalogObjects[version]);
-                                } else
+                                }
+                                else
                                 {
                                     PackageBase pb = GetPackageFromCatalogUrl((string)catalogObjects[version], request, packageSemanticVersions, context);
                                     if (pb != null)
@@ -188,9 +201,24 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     }
                     else
                     {
+                        // In some implementations (lookin' at you MyGet) there's no catalogEntry object
+                        
                         PackageBase pb = ConcurrentInMemoryCache.Instance.GetOrAdd<PackageBase>(registrationUrl, () =>
                         {
-                            return GetPackageFromCatalogUrl(this.ResourcesCollection.CatalogUrlConverter.Make(root), request, packageSemanticVersions, context);
+                            if (!root.HasProperty("catalogentry"))
+                            {
+                                if ((packageSemanticVersions == null || packageSemanticVersions.Contains(new SemanticVersion(root.version))))
+                                {
+                                    return this.ResourcesCollection.PackageConverter.Make(root);
+                                } else
+                                {
+                                    return null;
+                                }
+                            }
+                            else
+                            {
+                                return GetPackageFromCatalogUrl(this.ResourcesCollection.CatalogUrlConverter.Make(root), request, packageSemanticVersions, context);
+                            }
                         });
                         if (pb != null)
                         {
@@ -218,7 +246,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         latestPackage.IsLatestVersion = true;
                     }
                 }
-            } else if (finalAttempt)
+            }
+            else if (finalAttempt)
             {
                 // This is the last retry of this URL. It's definitely not a good one.
                 ConcurrentInMemoryCache.Instance.GetOrAdd<PackageBase>(registrationUrl, () => null);
@@ -270,8 +299,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 SemanticVersion latestVersion = null;
                 foreach (SemanticVersion v in packageInfo.AllVersions)
                 {
-                    if ((findContext.MinimumVersion != null && findContext.MinimumVersion > v) || 
-                        (findContext.MaximumVersion != null && findContext.MaximumVersion < v) || 
+                    if ((findContext.MinimumVersion != null && findContext.MinimumVersion > v) ||
+                        (findContext.MaximumVersion != null && findContext.MaximumVersion < v) ||
                         (findContext.RequiredVersion != null && findContext.RequiredVersion != v))
                     {
                         continue;
