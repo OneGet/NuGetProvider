@@ -363,20 +363,38 @@
             nugetRequest.Debug(Resources.Messages.SearchingRepository, "LocalPackageRepository", Source);
        
             var files = Directory.GetFiles(Source);
-
-            foreach (var package in nugetRequest.FilterOnTags(files.Select(nugetRequest.GetPackageByFilePath).Where(pkgItem => pkgItem != null).Select(pkg => pkg.Package)))
+            IEnumerable<IPackage> packageItems = files.Select(nugetRequest.GetPackageByFilePath).Where(pkgItem => pkgItem != null).Select(pkg => pkg.Package);
+            if (nugetRequest.FilterOnTag != null)
             {
-                yield return package;
+                foreach (var package in PackageFilterUtility.FilterOnTags(packageItems, nugetRequest.FilterOnTag.Value))
+                {
+                    yield return package;
+                }
+            } else
+            {
+                foreach (IPackage package in packageItems)
+                {
+                    yield return package;
+                }
             }
 
             // look in the package source location for directories that contain nupkg files.
             var subdirs = Directory.EnumerateDirectories(Source, "*", SearchOption.AllDirectories);        
             foreach (var subdir in subdirs) {
                 var nupkgs = Directory.EnumerateFileSystemEntries(subdir, "*.nupkg", SearchOption.TopDirectoryOnly);
-
-                foreach (var package in nugetRequest.FilterOnTags(nupkgs.Select(nugetRequest.GetPackageByFilePath).Where(pkgItem => pkgItem != null).Select(pkg => pkg.Package)))
+                packageItems = nupkgs.Select(nugetRequest.GetPackageByFilePath).Where(pkgItem => pkgItem != null).Select(pkg => pkg.Package);
+                if (nugetRequest.FilterOnTag != null)
                 {
-                    yield return package;
+                    foreach (var package in PackageFilterUtility.FilterOnTags(packageItems, nugetRequest.FilterOnTag.Value))
+                    {
+                        yield return package;
+                    }
+                } else
+                {
+                    foreach (IPackage package in packageItems)
+                    {
+                        yield return package;
+                    }
                 }
             }
         }

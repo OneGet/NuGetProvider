@@ -34,11 +34,25 @@ namespace Microsoft.PackageManagement.NuGetProvider
             this.Endpoints = new List<NuGetServiceInfo>();
         }
 
+        /// <summary>
+        /// Execute using default retry count and default backoff strategy.
+        /// </summary>
+        /// <typeparam name="T">Result type</typeparam>
+        /// <param name="executeWithBaseUrl">Process a given endpoint.</param>
+        /// <returns>Result of executeWithBaseUrl</returns>
         internal T Execute<T>(Func<string, T> executeWithBaseUrl)
         {
             return Execute<T>(executeWithBaseUrl, Constants.DefaultRetryCount, Constants.SimpleBackoffStrategy);
         }
 
+        /// <summary>
+        /// Execute a delegate using all known endpoints, retrying <paramref name="retryCount"/> times for each endpoint.
+        /// </summary>
+        /// <typeparam name="T">Result type</typeparam>
+        /// <param name="executeWithBaseUrl">Process a given endpoint.</param>
+        /// <param name="retryCount">Retry count</param>
+        /// <param name="backoffStrategy">Given original wait time between retries, get a new wait time.</param>
+        /// <returns>Result of executeWithBaseUrl</returns>
         internal T Execute<T>(Func<string, T> executeWithBaseUrl, int retryCount, Func<int, int> backoffStrategy)
         {
             IList<Exception> allErrors = new List<Exception>();
@@ -57,6 +71,15 @@ namespace Microsoft.PackageManagement.NuGetProvider
             throw new AggregateException(allErrors);
         }
 
+        /// <summary>
+        /// Execute a single endpoint.
+        /// </summary>
+        /// <typeparam name="T">Result type.</typeparam>
+        /// <param name="endpointInfo">Endpoint to try</param>
+        /// <param name="executeWithBaseUrl">Process the endpoint</param>
+        /// <param name="retryCount">Retry count</param>
+        /// <param name="backoffStrategy">>Given original wait time between retries, get a new wait time.</param>
+        /// <returns>Result of executeWithBaseUrl</returns>
         internal T SingleExecuteWithRetries<T>(NuGetServiceInfo endpointInfo, Func<string, T> executeWithBaseUrl, int retryCount, Func<int, int> backoffStrategy)
         {
             int sleepInMs = 0;

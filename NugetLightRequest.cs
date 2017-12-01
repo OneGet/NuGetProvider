@@ -1596,11 +1596,15 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     pkgs = from p in pkgs where string.IsNullOrWhiteSpace(p.Version.SpecialVersion) select p;
                 }
 
-                pkgs = FilterOnContains(pkgs);
-                pkgs = FilterOnTags(pkgs);
+                pkgs = PackageFilterUtility.FilterOnContains(pkgs, Contains.Value);
+                if (FilterOnTag != null)
+                {
+                    pkgs = PackageFilterUtility.FilterOnTags(pkgs, FilterOnTag.Value);
+                }
+
                 if (findResult.VersionPostFilterRequired)
                 {
-                    pkgs = FilterOnVersion(pkgs, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive);
+                    pkgs = PackageFilterUtility.FilterOnVersion(pkgs, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive);
                 }
 
                 IEnumerable<PackageItem> results = pkgs.Select(pkg => new PackageItem
@@ -1747,7 +1751,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
             return false;
         }
-
+        /*
         private IEnumerable<IPackage> FilterOnVersion(IEnumerable<IPackage> pkgs, string requiredVersion, string minimumVersion, string maximumVersion, bool minInclusive = true, bool maxInclusive = true)
         {
             if (!String.IsNullOrWhiteSpace(requiredVersion))
@@ -1836,7 +1840,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             return pkgs.Where(each => each.Description.IndexOf(Contains.Value, StringComparison.OrdinalIgnoreCase) > -1 ||
                 each.Id.IndexOf(Contains.Value, StringComparison.OrdinalIgnoreCase) > -1);
         }
-
+        */
         internal IEnumerable<PackageItem> SearchForPackages(string name)
         {
             var sources = SelectedSources.AsParallel().WithMergeOptions(ParallelMergeOptions.NotBuffered);
@@ -1955,13 +1959,12 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 if (!String.IsNullOrWhiteSpace(name) && searchResult.NamePostFilterRequired)
                 {
                     //Filter on the results. This is needed because we replace [...] regex in the searchterm at the begining of this method.
-                    FilterEntryByName nameFilter = new FilterEntryByName();
-                    pkgs = pkgs.Where(p => nameFilter.IsValid(new PackageEntryInfo(p.Id), searchContext));
+                    pkgs = pkgs.Where(p => PackageFilterUtility.IsValidByName(new PackageEntryInfo(p.Id), searchContext));
                 }
 
                 if (!String.IsNullOrWhiteSpace(Contains.Value) && searchResult.ContainsPostFilterRequired)
                 {
-                    pkgs = FilterOnContains(pkgs);
+                    pkgs = PackageFilterUtility.FilterOnContains(pkgs, Contains.Value);
                 }
 
                 var pkgsItem = pkgs.Select(pkg => new PackageItem

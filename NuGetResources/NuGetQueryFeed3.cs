@@ -28,8 +28,6 @@ namespace Microsoft.PackageManagement.NuGetProvider
     /// </summary>
     public class NuGetQueryFeed3 : NuGetRemoteFeedBase, INuGetQueryFeed
     {
-        private static FilterEntryByName FilterByName = new FilterEntryByName();
-
         public NuGetQueryFeed3(NuGetServiceInfo primaryServiceEndpoint)
         {
             this.Endpoints.Add(primaryServiceEndpoint);
@@ -141,7 +139,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
         {
             PackageEntryInfo packageEntryInfo = new PackageEntryInfo(packageEntry.id);
             
-            if (!FilterByName.IsValid(packageEntryInfo, searchContext))
+            if (!PackageFilterUtility.IsValidByName(packageEntryInfo, searchContext))
             {
                 yield break;
             }
