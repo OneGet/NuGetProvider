@@ -100,7 +100,7 @@
   </Target>
   
   <Target Name="PostBuild2" AfterTargets="PostBuildEvent" Condition="('$(EMBEDPROVIDERMANIFEST)' == 'true') AND ('$(PROVIDERROOTDIR)' != '')">
-    <Exec Command="echo Embedding provider manifest '$(TargetPath)'" />
-	<Exec Command="$(PROVIDERROOTDIR)\..\..\tools\mt.exe -manifest $(PROVIDERROOTDIR)\provider.manifest -outputresource:$(TargetPath);#101" />
+    <Exec Command="echo Embedding provider manifest '$(MANIFESTROOTDIR)\provider.manifest'" />
+	<Exec Command="$(PROVIDERROOTDIR)\..\..\tools\mt.exe -manifest $(MANIFESTROOTDIR)\provider.manifest -outputresource:$(TargetPath);#101" />
   </Target>
 </Project>

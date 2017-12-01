@@ -27,6 +27,7 @@ foreach ($f in $frameworks) {
     $env:EMBEDPROVIDERMANIFEST = 'true'
     $env:PROVIDERROOTDIR = Join-Path -Path $OneGetRepositoryRoot -ChildPath 'src' | 
         Join-Path -ChildPath 'Microsoft.PackageManagement.NuGetProvider'
+    $env:MANIFESTROOTDIR = $PSScriptRoot
     dotnet restore
     dotnet build --framework $f
     if ($CopyTo) {
