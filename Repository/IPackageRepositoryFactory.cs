@@ -3,6 +3,6 @@
 
     public interface IPackageRepositoryFactory
     {
-        IPackageRepository CreateRepository(PackageRepositoryCreateParameters parms);
+        IPackageRepository CreateRepository(PackageRepositoryCreateParameters parameters);
     }
 }

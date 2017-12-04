@@ -12,39 +12,39 @@
             get { return _default;}
         }
 
-        public IPackageRepository CreateRepository(PackageRepositoryCreateParameters parms)
+        public IPackageRepository CreateRepository(PackageRepositoryCreateParameters parameters)
         {
-            if (parms == null)
+            if (parameters == null)
             {
-                throw new ArgumentNullException("parms");
+                throw new ArgumentNullException("parameters");
             }
 
-            if (parms.Location == null)
+            if (parameters.Location == null)
             {
-                throw new ArgumentNullException("parms.Location");
+                throw new ArgumentNullException("parameters.Location");
             }
             
-            if (parms.Request == null)
+            if (parameters.Request == null)
             {
-                throw new ArgumentNullException("parms.Request");
+                throw new ArgumentNullException("parameters.Request");
             }
 
-            IPackageRepository repository = ConcurrentInMemoryCache.Instance.GetOrAdd<IPackageRepository>(parms.Location, () =>
+            IPackageRepository repository = ConcurrentInMemoryCache.Instance.GetOrAdd<IPackageRepository>(parameters.Location, () =>
             {
                 // we cannot call new uri on file path on linux because it will error out
-                if (System.IO.Directory.Exists(parms.Location))
+                if (System.IO.Directory.Exists(parameters.Location))
                 {
-                    return new LocalPackageRepository(parms.Location, parms.Request);
+                    return new LocalPackageRepository(parameters.Location, parameters.Request);
                 }
 
-                Uri uri = new Uri(parms.Location);
+                Uri uri = new Uri(parameters.Location);
 
                 if (uri.IsFile)
                 {
-                    return new LocalPackageRepository(uri.LocalPath, parms.Request);
+                    return new LocalPackageRepository(uri.LocalPath, parameters.Request);
                 }
 
-                return new NuGetPackageRepository(parms);
+                return new NuGetPackageRepository(parameters);
             });
 
             return repository;

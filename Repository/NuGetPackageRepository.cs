@@ -36,16 +36,16 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
         public INuGetResourceCollection ResourceProvider { get; private set; }
 
-        public NuGetPackageRepository(PackageRepositoryCreateParameters parms)
+        public NuGetPackageRepository(PackageRepositoryCreateParameters parameters)
         {
             // First validate the input package source location
-            if (!parms.ValidateLocation())
+            if (!parameters.ValidateLocation())
             {
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, Messages.InvalidQueryUrl, parms.Location));
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, Messages.InvalidQueryUrl, parameters.Location));
             }
 
-            this.ResourceProvider = NuGetResourceCollectionFactory.GetResources(parms.Location, parms.Request);
-            this.baseUrl = parms.Location;
+            this.ResourceProvider = NuGetResourceCollectionFactory.GetResources(parameters.Location, parameters.Request);
+            this.baseUrl = parameters.Location;
         }
 
         public IPackage FindPackage(NuGetSearchContext findContext, NuGetRequest request)

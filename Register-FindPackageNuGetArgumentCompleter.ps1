@@ -1,6 +1,6 @@
 <#PSScriptInfo
 .VERSION 0.0.1
-.AUTHOR brywang-msft
+.AUTHOR PowerShell Team
 .COPYRIGHT (c) Microsoft Corporation
 .GUID b4267027-4764-47fa-928f-61e7f6db43c3
 .TAGS Find-Package, PackageManagement, TabExpansion2, Register-ArgumentCompleter
@@ -34,22 +34,22 @@ Register-ArgumentCompleter -CommandName Find-Package -ParameterName Name -Script
 	$MAX_COMPLETION_RESULTS = 20
 
 
-    $location = $null # String
-    $credentialUserName = $null # String
-    $credentialUserPassword = $null # SecureString
-    $proxy = $null # IWebProxy
-    $headers = $null # string[]
+    [string]$location = $null
+    [string]$credentialUserName = $null
+    [System.Security.SecureString]$credentialUserPassword = $null
+    [System.Net.IWebProxy]$proxy = $null
+    [string[]]$headers = $null
 
     if ($boundParameters.ContainsKey('Source')) {
         $sourceValue = $boundParameters['Source']
-        $ps = Get-PackageSource $sourceValue -ErrorAction Ignore -WarningAction Ignore
+        $ps = Get-PackageSource $sourceValue -ProviderName NuGet -ErrorAction Ignore -WarningAction Ignore | Select-Object -First 1
         if ($ps -ne $null) {
             $location = $ps.Location
         } elseif ([System.Uri]::IsWellFormedUriString($sourceValue, [System.UriKind]::Absolute)) {
             $location = $sourceValue
         }
     } else {
-        $ps = Get-PackageSource -ErrorAction Ignore -WarningAction Ignore
+        $ps = Get-PackageSource -ProviderName NuGet -ErrorAction Ignore -WarningAction Ignore
         if ($ps -and ($ps.Count -eq 1)) {
             $location = $ps.Location
         }
@@ -64,7 +64,6 @@ Register-ArgumentCompleter -CommandName Find-Package -ParameterName Name -Script
         $headers = $boundParameters['Headers']
     }
 
-    # TODO: Handle proxy credentials for full and core CLR
     if ($boundParameters.ContainsKey('Proxy')) {
         $proxyUrl = $boundParameters['Proxy']
         $proxy = [System.Net.WebProxy]::new($proxyUrl)

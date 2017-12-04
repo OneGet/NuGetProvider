@@ -12,10 +12,10 @@ param(
 
     [Parameter(Mandatory=$false)]
     [string]
-    $CopyTo
+    $Destination
 )
 
-.\Generate-Resources.ps1
+& "$PSScriptRoot\Generate-Resources.ps1"
 
 if ($Framework -eq 'all') {
     $frameworks = @('net451','netcoreapp2.0','netstandard1.6')
@@ -30,8 +30,8 @@ foreach ($f in $frameworks) {
     $env:MANIFESTROOTDIR = $PSScriptRoot
     dotnet restore
     dotnet build --framework $f
-    if ($CopyTo) {
-        $copyDir = $CopyTo.Replace("{Root}", $OneGetRepositoryRoot)
+    if ($Destination) {
+        $copyDir = $Destination.Replace("{Root}", $OneGetRepositoryRoot)
         if ($f -eq 'net451') {
             $copyDir += "\\fullclr"
         } else {
