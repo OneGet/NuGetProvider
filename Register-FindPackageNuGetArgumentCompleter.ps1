@@ -10,7 +10,7 @@
 
 <#
 .Synopsis
-	Argument completers for Find-Package -Name.
+	Argument completers for Find-Package -Name for NuGet v3.
 .Description
 	The script registers argument completers for Find-Package -Name when a single source is registered OR -Source is specified. All credential parameters should be specified before pressing <tab>.
 	Installation:

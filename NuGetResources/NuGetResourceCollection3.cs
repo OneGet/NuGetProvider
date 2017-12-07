@@ -111,13 +111,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
                 if (serviceUsed)
                 {
-                    if (serviceSupplement)
+                    request.Debug(Messages.NuGetEndpointDiscovered, serviceInfo.Type, serviceInfo.Url);
+                    if (!serviceSupplement)
                     {
-                        request.Debug(Messages.NuGetEndpointDiscoveredAdditional, serviceInfo.Type, serviceInfo.Url);
-                    }
-                    else
-                    {
-                        request.Debug(Messages.NuGetEndpointDiscovered, serviceInfo.Type, serviceInfo.Url);
                         currentServiceMap[serviceInfo.Type] = serviceInfo;
                     }
                 }
