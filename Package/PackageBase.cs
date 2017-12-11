@@ -168,5 +168,6 @@
         public string PackageHash { get; set; }
 
         public Dictionary<string, string> AdditionalProperties { get; set; }
+        public bool IsPrerelease { get; set; }
     }
 }

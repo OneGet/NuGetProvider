@@ -346,4 +346,37 @@
   <data name="YieldingPackageSource" xml:space="preserve">
     <value>Yielding the package source: '{0}'.</value>
   </data>
+  <data name="FailedToCreateDownloadUri" xml:space="preserve">
+    <value>An internal error occurred: Failed to make package download URI for package '{0}' and version '{1}'. Failed to download.</value>
+  </data>
+  <data name="JsonSchemaMismatch" xml:space="preserve">
+    <value>An internal error occurred: The JSON object returned by the NuGet API does not match expected schema. Expected property: '{0}'. Check the debug stream for the full JSON object dump.</value>
+  </data>
+  <data name="JsonObjectDump" xml:space="preserve">
+    <value>JSON object: {0}</value>
+  </data>
+  <data name="FailedToParseTotalHitsCount" xml:space="preserve">
+    <value>Failed to get the count of responses from '{0}'. Only returning the first page of responses, if any.</value>
+  </data>
+  <data name="NuGetEndpointDiscovered" xml:space="preserve">
+    <value>Discovered service type '{0}': '{1}'</value>
+  </data>
+  <data name="NuGetEndpointDiscoveryFailed" xml:space="preserve">
+    <value>An internal error occurred: Failed to discover NuGet endpoints.</value>
+  </data>
+  <data name="TotalPackagesDiscovered" xml:space="preserve">
+    <value>NuGet query returned '{0}' hits.</value>
+  </data>
+  <data name="NuGetServerReadStarted" xml:space="preserve">
+    <value>Reading results from server...</value>
+  </data>
+  <data name="NuGetServerReadProgress" xml:space="preserve">
+    <value>Downloaded '{0} / {1}' results...</value>
+  </data>
+  <data name="VersionIndexDownloadFailed" xml:space="preserve">
+    <value>Unable to retrieve the list showing available versions for package {0}</value>
+  </data>
+  <data name="AllVersionsSearchNotSupported" xml:space="preserve">
+    <value>When searching using one or more wildcards, the AllVersions switch is not supported. This policy is in place to help alleviate stress on search services.</value>
+  </data>
 </root>

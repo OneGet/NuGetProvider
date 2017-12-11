@@ -27,7 +27,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
     /// <summary> 
     /// This class drives the Request class that is an interface exposed from the PackageManagement Platform to the provider to use.
     /// </summary>
-    public abstract class NuGetRequest : Request {
+    public abstract class NuGetRequest : Request
+    {
         private static readonly Regex _regexFastPath = new Regex(@"\$(?<source>[\w,\+,\/,=]*)\\(?<id>[\w,\+,\/,=]*)\\(?<version>[\w,\+,\/,=]*)\\(?<sources>[\w,\+,\/,=]*)(\\(?<powershellget>[\w,\+,\/,=]*))?");
 
         private static readonly byte[] _nugetBytes = Encoding.UTF8.GetBytes("NuGet");
@@ -68,7 +69,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <summary>
         /// Ctor required by the PackageManagement Platform
         /// </summary>
-        protected NuGetRequest() {
+        protected NuGetRequest()
+        {
             FilterOnTag = new Lazy<string[]>(() => (GetOptionValues("FilterOnTag") ?? new string[0]).ToArray());
             Contains = new Lazy<string>(() => GetOptionValue("Contains"));
             ExcludeVersion = new Lazy<bool>(() => GetOptionValue("ExcludeVersion").IsTrue());
@@ -134,7 +136,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <summary>
         /// Package sources
         /// </summary>
-        internal string[] OriginalSources {get; set;}
+        internal string[] OriginalSources { get; set; }
 
         /// <summary>
         /// Package installation location used by get-installedpackages.
@@ -244,7 +246,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 {
                     WriteError(ErrorCategory.InvalidOperation, ErrorCategory.InvalidOperation.ToString(),
                         Resources.Messages.InstallRequiresCurrentUserScopeParameterForNonSudoUser,
-                        dirPath, CurrentUserDefaultInstallLocation);                                      
+                        dirPath, CurrentUserDefaultInstallLocation);
                 }
                 Verbose(ex.Message);
                 throw;
@@ -253,7 +255,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
         internal string CurrentUserDefaultInstallLocation
         {
             get
-            {            
+            {
                 var path = Path.Combine(OSInformation.LocalAppDataDirectory, "PackageManagement", "NuGet", "Packages");
                 Debug("CurrentUserDefaultInstallLocation: {0}", path);
                 return path;
@@ -271,12 +273,13 @@ namespace Microsoft.PackageManagement.NuGetProvider
         }
 
 
-            /// <summary>
-            /// Get the PackageItem object from the fast path
-            /// </summary>
-            /// <param name="fastPath"></param>
-            /// <returns></returns>
-            internal PackageItem GetPackageByFastpath(string fastPath) {
+        /// <summary>
+        /// Get the PackageItem object from the fast path
+        /// </summary>
+        /// <param name="fastPath"></param>
+        /// <returns></returns>
+        internal PackageItem GetPackageByFastpath(string fastPath)
+        {
             Debug(Resources.Messages.DebugInfoCallMethod3, "NuGetRequest", "GetPackageByFastpath", fastPath);
 
             string sourceLocation;
@@ -284,10 +287,12 @@ namespace Microsoft.PackageManagement.NuGetProvider
             string version;
             string[] sources;
 
-            if (TryParseFastPath(fastPath, out sourceLocation, out id, out version, out sources)) {
+            if (TryParseFastPath(fastPath, out sourceLocation, out id, out version, out sources))
+            {
                 var source = ResolvePackageSource(sourceLocation);
 
-                if (source.IsSourceAFile) {
+                if (source.IsSourceAFile)
+                {
                     return GetPackageByFilePath(sourceLocation);
                 }
 
@@ -298,11 +303,16 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 }
 
                 // Have to find package again to get possible dependencies
-                var pkg = source.Repository.FindPackage(id, new SemanticVersion(version), this);
+                var pkg = source.Repository.FindPackage(new NuGetSearchContext()
+                {
+                    PackageInfo = new PackageEntryInfo(id),
+                    RequiredVersion = new SemanticVersion(version)
+                }, this);
 
                 // only finds the pkg if it is a file. so we don't return it here
                 // otherwise we make another download request
-                return new PackageItem {
+                return new PackageItem
+                {
                     FastPath = fastPath,
                     Package = pkg,
                     PackageSource = source,
@@ -319,38 +329,48 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <param name="filePath">package manifest file path</param>
         /// <param name="packageName">package Id or Name</param>
         /// <returns></returns>
-        internal PackageItem GetPackageByFilePath(string filePath, string packageName) 
+        internal PackageItem GetPackageByFilePath(string filePath, string packageName)
         {
             Debug(Resources.Messages.DebugInfoCallMethod3, "GetPackageByFilePath", filePath, packageName);
 
             PackageBase package = null;
-            try {
+            try
+            {
 
-                if (NuGetPathUtility.IsManifest(filePath)) {
+                if (NuGetPathUtility.IsManifest(filePath))
+                {
                     //.nuspec 
                     package = PackageUtility.ProcessNuspec(filePath);
 
-                } else if (NuGetPathUtility.IsPackageFile(filePath)) {
+                }
+                else if (NuGetPathUtility.IsPackageFile(filePath))
+                {
                     //.nupkg or .zip
                     //The file name may contains version.  ex: jQuery.2.1.1.nupkg
                     package = PackageUtility.DecompressFile(filePath, packageName);
 
-                } else {
+                }
+                else
+                {
                     Warning(Resources.Messages.InvalidFileExtension, filePath);
 
                 }
 
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 ex.Dump(this);
             }
 
-            if (package == null) {
+            if (package == null)
+            {
                 return null;
             }
 
             var source = ResolvePackageSource(filePath);
 
-            return new PackageItem {
+            return new PackageItem
+            {
                 FastPath = MakeFastPath(source, package.Id, package.Version),
                 PackageSource = source,
                 Package = package,
@@ -364,7 +384,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// </summary>
         /// <param name="filePath">package manifest file path</param>
         /// <returns></returns>
-        internal PackageItem GetPackageByFilePath(string filePath) {
+        internal PackageItem GetPackageByFilePath(string filePath)
+        {
             Debug(Resources.Messages.DebugInfoCallMethod3, "NuGetRequest", "GetPackageByFilePath", filePath);
             var packageName = Path.GetFileNameWithoutExtension(filePath);
 
@@ -377,14 +398,17 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// Unregister the package source
         /// </summary>
         /// <param name="id">package source id or name</param>
-        internal void RemovePackageSource(string id) {
+        internal void RemovePackageSource(string id)
+        {
             Debug(Resources.Messages.DebugInfoCallMethod3, "NuGetRequest", "RemovePackageSource", id);
             var config = Config;
-            if (config == null) {
+            if (config == null)
+            {
                 return;
             }
 
-            try {
+            try
+            {
 
                 XElement configuration = config.ElementsNoNamespace("configuration").FirstOrDefault();
                 if (configuration == null)
@@ -399,13 +423,16 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 }
 
                 var nodes = packageSources.Elements("add");
-                if (nodes == null) {
+                if (nodes == null)
+                {
                     return;
                 }
 
-                foreach (XElement node in nodes) {
+                foreach (XElement node in nodes)
+                {
 
-                    if (node.Attribute("key") != null && String.Equals(node.Attribute("key").Value, id, StringComparison.OrdinalIgnoreCase)) {
+                    if (node.Attribute("key") != null && String.Equals(node.Attribute("key").Value, id, StringComparison.OrdinalIgnoreCase))
+                    {
                         // remove itself
                         node.Remove();
                         Config = config;
@@ -427,14 +454,16 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
 
                 //var source = config.SelectNodes("/configuration/packageSources/add").Cast<XmlNode>().FirstOrDefault(node => String.Equals(node.Attributes["key"].Value, id, StringComparison.CurrentCultureIgnoreCase));
-                
+
                 //if (source != null)
                 //{
                 //    source.ParentNode.RemoveChild(source);
                 //    Config = config;
                 //    Verbose(Resources.Messages.RemovedPackageSource, id);
                 //}
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 ex.Dump(this);
             }
         }
@@ -446,13 +475,16 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <param name="location">package source location</param>
         /// <param name="isTrusted">is the source trusted</param>
         /// <param name="isValidated">need validate before storing the information to config file</param>
-        internal void AddPackageSource(string name, string location, bool isTrusted, bool isValidated) {
+        internal void AddPackageSource(string name, string location, bool isTrusted, bool isValidated)
+        {
 
             Debug(Resources.Messages.DebugInfoCallMethod, "NuGetRequest", string.Format(CultureInfo.InvariantCulture, "AddPackageSource - name= {0}, location={1}", name, location));
-            try {
+            try
+            {
                 // here the source is already validated by the caller
                 var config = Config;
-                if (config == null) {
+                if (config == null)
+                {
                     return;
                 }
 
@@ -533,7 +565,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     });
                 }
 
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 ex.Dump(this);
             }
         }
@@ -543,19 +577,25 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// </summary>
         /// <param name="location"></param>
         /// <returns></returns>
-        internal bool ValidateSourceLocation(string location) {
+        internal bool ValidateSourceLocation(string location)
+        {
 
             Debug(Resources.Messages.DebugInfoCallMethod3, "NuGetRequest", "ValidateSourceLocation", location);
             //Handling http: or file: cases
-            if (Uri.IsWellFormedUriString(location, UriKind.Absolute)) {
+            if (Uri.IsWellFormedUriString(location, UriKind.Absolute))
+            {
                 return NuGetPathUtility.ValidateSourceUri(SupportedSchemes, new Uri(location), this);
             }
-            try {
+            try
+            {
                 //UNC or local file
-                if (Directory.Exists(location) || File.Exists(location)) {
+                if (Directory.Exists(location) || File.Exists(location))
+                {
                     return true;
                 }
-            } catch {
+            }
+            catch
+            {
             }
             return false;
         }
@@ -563,8 +603,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <summary>
         /// Supported package source schemes by this provider
         /// </summary>
-        internal static IEnumerable<string> SupportedSchemes {
-            get {
+        internal static IEnumerable<string> SupportedSchemes
+        {
+            get
+            {
                 return NuGetProvider.Features[Constants.Features.SupportedSchemes];
             }
         }
@@ -574,15 +616,18 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// </summary>
         /// <param name="name">The package source name to search for</param>
         /// <returns>package source object</returns>
-        internal PackageSource FindRegisteredSource(string name) {
+        internal PackageSource FindRegisteredSource(string name)
+        {
 
             Debug(Resources.Messages.DebugInfoCallMethod3, "NuGetRequest", "FindRegisteredSource", name);
             var srcs = RegisteredPackageSources;
 
-            if (srcs == null) {
+            if (srcs == null)
+            {
                 return null;
             }
-            if (srcs.ContainsKey(name)) {
+            if (srcs.ContainsKey(name))
+            {
                 return srcs[name];
             }
 
@@ -596,27 +641,34 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <param name="packageReferences"></param>
         /// <param name="searchKey"></param>
         /// <returns></returns>
-        internal bool YieldPackages(IEnumerable<PackageItem> packageReferences, string searchKey) {
+        internal bool YieldPackages(IEnumerable<PackageItem> packageReferences, string searchKey)
+        {
             var foundPackage = false;
-            if (packageReferences == null) {
+            if (packageReferences == null)
+            {
                 return false;
             }
 
             Debug(Resources.Messages.Iterating, searchKey);
 
-            IEnumerable<PackageItem>  packageItems = packageReferences;
+            IEnumerable<PackageItem> packageItems = packageReferences;
 
             int count = 0;
 
-            foreach (var pkg in packageItems) {
+            foreach (var pkg in packageItems)
+            {
                 foundPackage = true;
-                try {
-                    if (!YieldPackage(pkg, searchKey)) {
+                try
+                {
+                    if (!YieldPackage(pkg, searchKey))
+                    {
                         break;
                     }
 
                     count++;
-                } catch (Exception e) {
+                }
+                catch (Exception e)
+                {
                     e.Dump(this);
                     return false;
                 }
@@ -721,11 +773,11 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <param name="searchKey"></param>
         /// <param name="destinationPath"></param>
         /// <returns></returns>
-        internal bool YieldPackage(PackageItem pkg, string searchKey, string destinationPath=null)
+        internal bool YieldPackage(PackageItem pkg, string searchKey, string destinationPath = null)
         {
-            try 
+            try
             {
-                if (YieldSoftwareIdentity(pkg.FastPath, pkg.Package.Id, pkg.Package.Version.ToString(), "semver", pkg.Package.Summary, pkg.PackageSource.Name, searchKey, pkg.FullPath, pkg.PackageFilename) != null) 
+                if (YieldSoftwareIdentity(pkg.FastPath, pkg.Package.Id, pkg.Package.Version.ToString(), "semver", pkg.Package.Summary, pkg.PackageSource.Name, searchKey, pkg.FullPath, pkg.PackageFilename) != null)
                 {
                     if (pkg.Package.DependencySetList != null)
                     {
@@ -755,11 +807,13 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
                         AddDirectory(payload, Path.GetFileName(destinationPath), Path.GetDirectoryName(destinationPath), null, true);
                     }
-                    
-                    if (AddMetadata(pkg.FastPath, "copyright", pkg.Package.Copyright) == null) {
+
+                    if (AddMetadata(pkg.FastPath, "copyright", pkg.Package.Copyright) == null)
+                    {
                         return false;
                     }
-                    if (AddMetadata(pkg.FastPath, "description", pkg.Package.Description) == null) {
+                    if (AddMetadata(pkg.FastPath, "description", pkg.Package.Description) == null)
+                    {
                         return false;
                     }
                     if (AddMetadata(pkg.FastPath, "licenseNames", pkg.Package.LicenseNames) == null)
@@ -770,10 +824,12 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     {
                         return false;
                     }
-                    if (AddMetadata(pkg.FastPath, "language", pkg.Package.Language) == null) {
+                    if (AddMetadata(pkg.FastPath, "language", pkg.Package.Language) == null)
+                    {
                         return false;
                     }
-                    if (AddMetadata(pkg.FastPath, "releaseNotes", pkg.Package.ReleaseNotes) == null) {
+                    if (AddMetadata(pkg.FastPath, "releaseNotes", pkg.Package.ReleaseNotes) == null)
+                    {
                         return false;
                     }
                     if (AddMetadata(pkg.FastPath, "isLatestVersion", pkg.Package.IsLatestVersion.ToString()) == null)
@@ -812,8 +868,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
                             return false;
                         }
                     }
-                    if (pkg.Package.Published != null) {
-                        if (AddMetadata(pkg.FastPath, "published", pkg.Package.Published.ToString()) == null) {
+                    if (pkg.Package.Published != null)
+                    {
+                        if (AddMetadata(pkg.FastPath, "published", pkg.Package.Published.ToString()) == null)
+                        {
                             return false;
                         }
                     }
@@ -838,39 +896,47 @@ namespace Microsoft.PackageManagement.NuGetProvider
                             return false;
                         }
                     }
-                    if (AddMetadata(pkg.FastPath, "tags", pkg.Package.Tags) == null) {
+                    if (AddMetadata(pkg.FastPath, "tags", pkg.Package.Tags) == null)
+                    {
                         return false;
                     }
-                    if (AddMetadata(pkg.FastPath, "title", pkg.Package.Title) == null) {
+                    if (AddMetadata(pkg.FastPath, "title", pkg.Package.Title) == null)
+                    {
                         return false;
                     }
-                    if (AddMetadata(pkg.FastPath, "developmentDependency", pkg.Package.DevelopmentDependency.ToString()) == null) {
+                    if (AddMetadata(pkg.FastPath, "developmentDependency", pkg.Package.DevelopmentDependency.ToString()) == null)
+                    {
                         return false;
                     }
-                    if (AddMetadata(pkg.FastPath, "FromTrustedSource", pkg.PackageSource.Trusted.ToString()) == null) {
+                    if (AddMetadata(pkg.FastPath, "FromTrustedSource", pkg.PackageSource.Trusted.ToString()) == null)
+                    {
                         return false;
                     }
                     if (pkg.Package.LicenseUrl != null && !String.IsNullOrWhiteSpace(pkg.Package.LicenseUrl.ToString()))
                     {
-                        if (AddLink(pkg.Package.LicenseUrl, "license", null, null, null, null, null) == null) {
+                        if (AddLink(pkg.Package.LicenseUrl, "license", null, null, null, null, null) == null)
+                        {
                             return false;
                         }
                     }
                     if (pkg.Package.ProjectUrl != null && !String.IsNullOrWhiteSpace(pkg.Package.ProjectUrl.ToString()))
                     {
-                        if (AddLink(pkg.Package.ProjectUrl, "project", null, null, null, null, null) == null) {
+                        if (AddLink(pkg.Package.ProjectUrl, "project", null, null, null, null, null) == null)
+                        {
                             return false;
                         }
                     }
                     if (pkg.Package.ReportAbuseUrl != null && !String.IsNullOrWhiteSpace(pkg.Package.ReportAbuseUrl.ToString()))
                     {
-                        if (AddLink(pkg.Package.ReportAbuseUrl, "abuse", null, null, null, null, null) == null) {
+                        if (AddLink(pkg.Package.ReportAbuseUrl, "abuse", null, null, null, null, null) == null)
+                        {
                             return false;
                         }
                     }
                     if (pkg.Package.IconUrl != null && !String.IsNullOrWhiteSpace(pkg.Package.IconUrl.ToString()))
                     {
-                        if (AddLink(pkg.Package.IconUrl, "icon", null, null, null, null, null) == null) {
+                        if (AddLink(pkg.Package.IconUrl, "icon", null, null, null, null, null) == null)
+                        {
                             return false;
                         }
                     }
@@ -888,11 +954,13 @@ namespace Microsoft.PackageManagement.NuGetProvider
                             return false;
                         }
                     }
-                    if (pkg.Package.Authors.Any(author => AddEntity(author.Trim(), author.Trim(), "author", null) == null)) {
+                    if (pkg.Package.Authors.Any(author => AddEntity(author.Trim(), author.Trim(), "author", null) == null))
+                    {
                         return false;
                     }
 
-                    if (pkg.Package.Owners.Any(owner => AddEntity(owner.Trim(), owner.Trim(), "owner", null) == null)) {
+                    if (pkg.Package.Owners.Any(owner => AddEntity(owner.Trim(), owner.Trim(), "owner", null) == null))
+                    {
                         return false;
                     }
 
@@ -910,10 +978,14 @@ namespace Microsoft.PackageManagement.NuGetProvider
                             }
                         }
                     }
-                } else {
+                }
+                else
+                {
                     return false;
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 e.Dump(this);
                 return false;
             }
@@ -1090,7 +1162,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <param name="request"></param>
         /// <returns></returns>
         internal IEnumerable<PackageItem> GetPackageById(string name, NuGetRequest request, string requiredVersion = null,
-            string minimumVersion = null, string maximumVersion = null, bool minInclusive = true, bool maxInclusive = true) {
+            string minimumVersion = null, string maximumVersion = null, bool minInclusive = true, bool maxInclusive = true)
+        {
             if (String.IsNullOrWhiteSpace(name))
             {
                 return Enumerable.Empty<PackageItem>();
@@ -1106,7 +1179,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <param name="id">package id</param>
         /// <param name="version">package version</param>
         /// <returns></returns>
-        internal string MakeFastPath(PackageSource source, string id, string version) {
+        internal string MakeFastPath(PackageSource source, string id, string version)
+        {
             // if this is called from powershellget, append nonupkg at the end
             if (IsCalledFromPowerShellGet)
             {
@@ -1119,9 +1193,12 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <summary>
         /// Return all registered package sources
         /// </summary>
-        internal IEnumerable<PackageSource> SelectedSources {
-            get {
-                if (IsCanceled) {
+        internal IEnumerable<PackageSource> SelectedSources
+        {
+            get
+            {
+                if (IsCanceled)
+                {
                     yield break;
                 }
 
@@ -1131,11 +1208,13 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 var pkgSources = RegisteredPackageSources;
 
                 Debug(Resources.Messages.RegisteredSources, pkgSources.Count, NuGetConstant.ProviderName);
-                
+
                 //If a user does not provider -source, we use the registered ones
-                if (sources.Length == 0) {
+                if (sources.Length == 0)
+                {
                     // return them all.
-                    foreach (var src in pkgSources.Values) {
+                    foreach (var src in pkgSources.Values)
+                    {
                         Debug(src.Name);
                         // set the request of the registered one to the current request because it may have additional information like credential
                         src.Request = this;
@@ -1205,8 +1284,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
                             if (!SkipValidate.Value)
                             {
-                                try{
-                                    isValidated = NuGetPathUtility.ValidateSourceUri(SupportedSchemes, srcUri, this);
+                                try
+                                {
+                                    // Only validate once
+                                    isValidated = ConcurrentInMemoryCache.Instance.GetOrAdd(String.Format(CultureInfo.InvariantCulture, "SelectedSources:{0}", srcUri.AbsoluteUri), () => NuGetPathUtility.ValidateSourceUri(SupportedSchemes, srcUri, this));
                                 }
                                 catch (Exception ex)
                                 {
@@ -1219,14 +1300,14 @@ namespace Microsoft.PackageManagement.NuGetProvider
                                 Debug(Resources.Messages.SuccessfullyValidated, src);
 
                                 yield return new PackageSource
-                                    {
-                                        Request = this,
-                                        Location = srcUri.ToString(),
-                                        Name = srcUri.ToString(),
-                                        Trusted = false,
-                                        IsRegistered = false,
-                                        IsValidated = isValidated,
-                                    };
+                                {
+                                    Request = this,
+                                    Location = srcUri.ToString(),
+                                    Name = srcUri.ToString(),
+                                    Trusted = false,
+                                    IsRegistered = false,
+                                    IsValidated = isValidated,
+                                };
                                 continue;
                             }
                             Warning(Constants.Messages.UnableToResolveSource, src);
@@ -1244,14 +1325,14 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         Debug(Resources.Messages.SourceIsADirectory, src);
 
                         PackageSource newSource = new PackageSource
-                            {
-                                Request = this,
-                                Location = src,
-                                Name = src,
-                                Trusted = true,
-                                IsRegistered = false,
-                                IsValidated = true,
-                            };
+                        {
+                            Request = this,
+                            Location = src,
+                            Name = src,
+                            Trusted = true,
+                            IsRegistered = false,
+                            IsValidated = true,
+                        };
                         _checkedUnregisteredPackageSources.Add(src, newSource);
                         yield return newSource;
                     }
@@ -1264,23 +1345,28 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
         }
 
-        private XDocument Config {
-            get {
+        private XDocument Config
+        {
+            get
+            {
                 if (_config == null)
                 {
                     Debug(Resources.Messages.LoadingConfigurationFile, ConfigurationFileLocation);
 
                     XDocument doc = null;
 
-                    try{
-                        using (FileStream fs = new FileStream(ConfigurationFileLocation, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
+                    try
+                    {
+                        using (FileStream fs = new FileStream(ConfigurationFileLocation, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        {
                             // load the xdocument from the file stream
                             doc = XmlUtility.LoadSafe(fs, ignoreWhiteSpace: true);
                         }
 
                         Debug(Resources.Messages.LoadedConfigurationFile, ConfigurationFileLocation);
 
-                        if (doc.Root != null && doc.Root.Name != null && String.Equals(doc.Root.Name.LocalName, "configuration", StringComparison.OrdinalIgnoreCase)) {
+                        if (doc.Root != null && doc.Root.Name != null && String.Equals(doc.Root.Name.LocalName, "configuration", StringComparison.OrdinalIgnoreCase))
+                        {
                             _config = doc;
                             return _config;
                         }
@@ -1289,7 +1375,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     catch (Exception e)
                     {
                         // a bad xml doc or a folder gets deleted somehow
-                        Warning(e.Message);                      
+                        Warning(e.Message);
                         //string dir = Path.GetDirectoryName(ConfigurationFileLocation);
                         //if (dir != null && !Directory.Exists(dir))
                         //{
@@ -1304,9 +1390,11 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
                 return _config;
             }
-            set {
-                
-                if (value == null) {
+            set
+            {
+
+                if (value == null)
+                {
                     Debug(Resources.Messages.SettingConfigurationToNull);
                     return;
                 }
@@ -1332,8 +1420,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
         }
 
-        private string ConfigurationFileLocation {
-            get {
+        private string ConfigurationFileLocation
+        {
+            get
+            {
                 if (String.IsNullOrWhiteSpace(_configurationFileLocation))
                 {
                     // get the value from the request
@@ -1348,7 +1438,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
                             WriteError(ErrorCategory.InvalidArgument, _configurationFileLocation, Resources.Messages.FileNotFound);
                         }
 
-                    } else {
+                    }
+                    else
+                    {
 
                         var appdataFolder = Environment.GetEnvironmentVariable("appdata");
                         if (!OSInformation.IsWindows)
@@ -1374,14 +1466,15 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         }
                     }
                 }
-              
+
                 return _configurationFileLocation;
             }
         }
 
         private IDictionary<string, PackageSource> RegisteredPackageSources
         {
-            get {
+            get
+            {
                 if (_registeredPackageSources == null)
                 {
                     _registeredPackageSources = new ConcurrentDictionary<string, PackageSource>(StringComparer.OrdinalIgnoreCase);
@@ -1429,15 +1522,17 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
         }
 
-        private IEnumerable<PackageItem> GetPackageById(PackageSource source, 
+        private IEnumerable<PackageItem> GetPackageById(PackageSource source,
             string name,
-            NuGetRequest request, 
-            string requiredVersion = null, 
-            string minimumVersion = null, 
+            NuGetRequest request,
+            string requiredVersion = null,
+            string minimumVersion = null,
             string maximumVersion = null,
             bool minInclusive = true,
-            bool maxInclusive = true) {
-            try {
+            bool maxInclusive = true)
+        {
+            try
+            {
                 Debug(Resources.Messages.DebugInfoCallMethod3, "NuGetRequest", "GetPackageById", name);
 
                 // source should be attached to a repository
@@ -1447,7 +1542,17 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 }
 
                 // otherwise fall back to traditional behavior
-                var pkgs = source.Repository.FindPackagesById(name, request);
+                var findResult = source.Repository.FindPackagesById(new NuGetSearchContext()
+                {
+                    PackageInfo = new PackageEntryInfo(name),
+                    RequiredVersion = String.IsNullOrWhiteSpace(requiredVersion) ? null : new SemanticVersion(requiredVersion),
+                    MinimumVersion = String.IsNullOrWhiteSpace(minimumVersion) ? null : new SemanticVersion(minimumVersion),
+                    MaximumVersion = String.IsNullOrWhiteSpace(maximumVersion) ? null : new SemanticVersion(maximumVersion),
+                    AllowPrerelease = AllowPrereleaseVersions.Value,
+                    AllVersions = AllVersions.Value,
+                    EnableDeepMetadataBypass = AllVersions.Value, // Bypass deep metadata when allversions is requested
+                }, request);
+                var pkgs = findResult.Result;
 
                 // exact version is required if required version is not null or empty OR maxversion == minversion and min and max inclusive are true
                 bool exactVersionRequired = (!string.IsNullOrWhiteSpace(requiredVersion))
@@ -1463,21 +1568,25 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     pkgs = pkgs.Where(pkg => pkg.Published.HasValue && pkg.Published.Value.Year > 1900);
                 }
 
-                if (AllVersions.Value){
+                if (AllVersions.Value)
+                {
                     //Display versions from lastest to oldest
                     pkgs = (from p in pkgs select p).OrderByDescending(x => x.Version);
                 }
                 else if (String.IsNullOrWhiteSpace(requiredVersion) && String.IsNullOrWhiteSpace(minimumVersion) && String.IsNullOrWhiteSpace(maximumVersion))
                 {
 
-                    if (AllowPrereleaseVersions.Value || source.Repository.IsFile) {
+                    if (AllowPrereleaseVersions.Value || source.Repository.IsFile)
+                    {
                         //Handling something like Json.NET 7.0.1-beta3 as well as local repository
                         pkgs = from p in pkgs
-                            group p by p.Id
+                               group p by p.Id
                             into newGroup
-                                   select newGroup.Aggregate((current, next) => (next.Version > current.Version) ? next : current);
+                               select newGroup.Aggregate((current, next) => (next.Version > current.Version) ? next : current);
 
-                    } else {
+                    }
+                    else
+                    {
                         pkgs = from p in pkgs where p.IsLatestVersion select p;
                     }
                 }
@@ -1486,44 +1595,61 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     // if exact version is not required and allow prerelease is false, we will have to filter out prerelease version
                     pkgs = from p in pkgs where string.IsNullOrWhiteSpace(p.Version.SpecialVersion) select p;
                 }
-             
-                pkgs = FilterOnContains(pkgs);
-                pkgs = FilterOnTags(pkgs);
 
-                var results = FilterOnVersion(pkgs, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive)
-                    .Select(pkg => new PackageItem {
-                        Package = pkg,
-                        PackageSource = source,
-                        FastPath = MakeFastPath(source, pkg.Id, pkg.Version.ToString())
-                    });
+                pkgs = PackageFilterUtility.FilterOnContains(pkgs, Contains.Value);
+                if (FilterOnTag != null)
+                {
+                    pkgs = PackageFilterUtility.FilterOnTags(pkgs, FilterOnTag.Value);
+                }
+
+                if (findResult.VersionPostFilterRequired)
+                {
+                    pkgs = PackageFilterUtility.FilterOnVersion(pkgs, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive);
+                }
+
+                IEnumerable<PackageItem> results = pkgs.Select(pkg => new PackageItem
+                {
+                    Package = pkg,
+                    PackageSource = source,
+                    FastPath = MakeFastPath(source, pkg.Id, pkg.Version.ToString())
+                });
+
                 return results;
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 e.Dump(this);
                 return Enumerable.Empty<PackageItem>();
             }
         }
 
-        private PackageSource ResolvePackageSource(string nameOrLocation) {
+        private PackageSource ResolvePackageSource(string nameOrLocation)
+        {
             Debug(Resources.Messages.DebugInfoCallMethod3, "NuGetRequest", "ResolvePackageSource", nameOrLocation);
 
-            if (IsCanceled) {
+            if (IsCanceled)
+            {
                 return null;
             }
 
             var source = FindRegisteredSource(nameOrLocation);
-            if (source != null) {
+            if (source != null)
+            {
                 Debug(Resources.Messages.FoundRegisteredSource, nameOrLocation, NuGetConstant.ProviderName);
                 return source;
             }
 
             Debug(Resources.Messages.NotFoundRegisteredSource, nameOrLocation, NuGetConstant.ProviderName);
 
-            try {
+            try
+            {
                 // is the given value a filename?
-                if (File.Exists(nameOrLocation)) {
+                if (File.Exists(nameOrLocation))
+                {
                     Debug(Resources.Messages.SourceIsAFilePath, nameOrLocation);
 
-                    return new PackageSource() {
+                    return new PackageSource()
+                    {
                         Request = this,
                         IsRegistered = false,
                         IsValidated = true,
@@ -1532,14 +1658,19 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         Trusted = true,
                     };
                 }
-            } catch {
+            }
+            catch
+            {
             }
 
-            try {
+            try
+            {
                 // is the given value a directory?
-                if (Directory.Exists(nameOrLocation)) {
+                if (Directory.Exists(nameOrLocation))
+                {
                     Debug(Resources.Messages.SourceIsADirectory, nameOrLocation);
-                    return new PackageSource() {
+                    return new PackageSource()
+                    {
                         Request = this,
                         IsRegistered = false,
                         IsValidated = true,
@@ -1548,19 +1679,25 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         Trusted = true,
                     };
                 }
-            } catch {
+            }
+            catch
+            {
             }
 
-            if (Uri.IsWellFormedUriString(nameOrLocation, UriKind.Absolute)) {
+            if (Uri.IsWellFormedUriString(nameOrLocation, UriKind.Absolute))
+            {
                 var uri = new Uri(nameOrLocation, UriKind.Absolute);
-                if (!SupportedSchemes.Contains(uri.Scheme.ToLowerInvariant())) {
+                if (!SupportedSchemes.Contains(uri.Scheme.ToLowerInvariant()))
+                {
                     WriteError(ErrorCategory.InvalidArgument, uri.ToString(), Constants.Messages.UriSchemeNotSupported, uri);
                     return null;
                 }
 
                 // this is an URI, and it looks like one type that we support
-                if (SkipValidate.Value || NuGetPathUtility.ValidateSourceUri(SupportedSchemes, uri, this)) {                    
-                    var uriSource = new PackageSource {
+                if (SkipValidate.Value || NuGetPathUtility.ValidateSourceUri(SupportedSchemes, uri, this))
+                {
+                    var uriSource = new PackageSource
+                    {
                         Request = this,
                         IsRegistered = false,
                         IsValidated = !SkipValidate.Value,
@@ -1577,7 +1714,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             return null;
         }
 
-        private bool TryParseFastPath(string fastPath, out string source, out string id, out string version, out string[] sources) 
+        private bool TryParseFastPath(string fastPath, out string source, out string id, out string version, out string[] sources)
         {
             var match = _regexFastPath.Match(fastPath);
             source = match.Success ? match.Groups["source"].Value.FromBase64() : null;
@@ -1594,106 +1731,28 @@ namespace Microsoft.PackageManagement.NuGetProvider
             return match.Success;
         }
 
-        private bool LocationCloseEnoughMatch(string givenLocation, string knownLocation) {
-            if (givenLocation.Equals(knownLocation, StringComparison.OrdinalIgnoreCase)) {
+        private bool LocationCloseEnoughMatch(string givenLocation, string knownLocation)
+        {
+            if (givenLocation.Equals(knownLocation, StringComparison.OrdinalIgnoreCase))
+            {
                 return true;
             }
 
             // make trailing slashes consistent
-            if (givenLocation.TrimEnd('/').Equals(knownLocation.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)) {
+            if (givenLocation.TrimEnd('/').Equals(knownLocation.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+            {
                 return true;
             }
 
             // and trailing backslashes
-            if (givenLocation.TrimEnd('\\').Equals(knownLocation.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)) {
+            if (givenLocation.TrimEnd('\\').Equals(knownLocation.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+            {
                 return true;
             }
             return false;
         }
 
-        private IEnumerable<IPackage> FilterOnVersion(IEnumerable<IPackage> pkgs, string requiredVersion, string minimumVersion, string maximumVersion, bool minInclusive = true, bool maxInclusive = true) {
-            if (!String.IsNullOrWhiteSpace(requiredVersion))
-            {
-                pkgs = pkgs.Where(each => each.Version == new SemanticVersion(requiredVersion));
-            } else {
-                if (!String.IsNullOrWhiteSpace(minimumVersion))
-                {
-                    // if minInclusive, then use >= else use >
-                    if (minInclusive)
-                    {
-                        pkgs = pkgs.Where(each => each.Version >= new SemanticVersion(minimumVersion));
-                    }
-                    else
-                    {
-                        pkgs = pkgs.Where(each => each.Version > new SemanticVersion(minimumVersion));
-                    }
-                }
-
-                if (!String.IsNullOrWhiteSpace(maximumVersion))
-                {
-                    // if maxInclusive, then use < else use <=
-                    if (maxInclusive)
-                    {
-                        pkgs = pkgs.Where(each => each.Version <= new SemanticVersion(maximumVersion));
-                    }
-                    else
-                    {
-                        pkgs = pkgs.Where(each => each.Version < new SemanticVersion(maximumVersion));
-                    }
-                }
-            }
-           
-            return pkgs;
-        }
-
-        private IEnumerable<IPackage> FilterOnName(IEnumerable<IPackage> pkgs, string searchTerm, bool useWildCard)
-        {
-            if (useWildCard) 
-            {
-                // Applying the wildcard pattern matching
-                const WildcardOptions wildcardOptions = WildcardOptions.CultureInvariant | WildcardOptions.IgnoreCase;
-                var wildcardPattern = new WildcardPattern(searchTerm, wildcardOptions);
-
-                return pkgs.Where(p => wildcardPattern.IsMatch(p.Id));
-
-            } else {
-                return pkgs.Where(each => each.Id.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) > -1);
-            }   
-        }
-
-        internal IEnumerable<IPackage> FilterOnTags(IEnumerable<IPackage> pkgs)
-        {
-            if (FilterOnTag == null || FilterOnTag.Value.Length == 0)
-            {
-                return pkgs;
-            }
-
-            //Tags should be performed as *AND* intead of *OR"
-            //For example -FilterOnTag:{ "A", "B"}, the returned package should have both A and B.
-            return pkgs.Where(pkg => FilterOnTag.Value.All(
-                tagFromUser =>
-                {
-                    if (string.IsNullOrWhiteSpace(pkg.Tags))
-                    {
-                        // if there are tags and a package has no tag, don't return it
-                        return false;
-                    }
-                    var tagArray = pkg.Tags.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    return tagArray.Any(tagFromPackage => tagFromPackage.EqualsIgnoreCase(tagFromUser));
-                }
-                ));
-        }
-
-        private IEnumerable<IPackage> FilterOnContains(IEnumerable<IPackage> pkgs) {
-            if (string.IsNullOrWhiteSpace(Contains.Value))
-            {
-                return pkgs;
-            }
-            return pkgs.Where(each => each.Description.IndexOf(Contains.Value, StringComparison.OrdinalIgnoreCase) > -1 || 
-                each.Id.IndexOf(Contains.Value, StringComparison.OrdinalIgnoreCase) > -1);
-        }
-
-        internal IEnumerable<PackageItem> SearchForPackages(string name) 
+        internal IEnumerable<PackageItem> SearchForPackages(string name)
         {
             var sources = SelectedSources.AsParallel().WithMergeOptions(ParallelMergeOptions.NotBuffered);
 
@@ -1708,7 +1767,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <returns></returns>
         private IEnumerable<PackageItem> SearchForPackages(PackageSource source, string name)
         {
-            try 
+            try
             {
                 Debug(Resources.Messages.DebugInfoCallMethod3, "NuGetRequest", "SearchForPackages", name);
 
@@ -1718,24 +1777,32 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     return Enumerable.Empty<PackageItem>();
                 }
 
-                var isNameContainsWildCard = false;
                 var searchTerm = Contains.Value ?? string.Empty;
 
+                List<NuGetSearchTerm> searchTerms = new List<NuGetSearchTerm>();
                 // Deal with two cases here:
                 // 1. The package name contains wildcards like "Find-Package -name JQ*". We search based on the name.
                 // 2. A user does not provide the Name parameter,
 
                 // A user provides name with wildcards. We will use name as the SearchTerm while Contains and Tag will be used
                 // for filtering on the results.
-                if (!String.IsNullOrWhiteSpace(name) && WildcardPattern.ContainsWildcardCharacters(name)) 
+                StringBuilder searchTermsDebugMessageBuilder = new StringBuilder();
+                if (!String.IsNullOrWhiteSpace(name) && WildcardPattern.ContainsWildcardCharacters(name))
                 {
-                    isNameContainsWildCard = true;
+                    if (AllVersions.Value)
+                    {
+                        WriteError(ErrorCategory.InvalidArgument, name, Messages.AllVersionsSearchNotSupported);
+                        return Enumerable.Empty<PackageItem>();
+                    }
+
+                    searchTerms.Add(new NuGetSearchTerm(NuGetSearchTerm.NuGetSearchTermType.OriginalPSPattern, name));
 
                     // NuGet does not support PowerShell/POSIX style wildcards and supports only '*' in searchTerm 
                     // Replace the range from '[' - to ']' with * and ? with * then wildcard pattern is applied on the results
                     var tempName = name;
                     var squareBracketPattern = Regex.Escape("[") + "(.*?)]";
-                    foreach (Match match in Regex.Matches(tempName, squareBracketPattern)) {
+                    foreach (Match match in Regex.Matches(tempName, squareBracketPattern))
+                    {
                         tempName = tempName.Replace(match.Value, "*");
                     }
 
@@ -1755,7 +1822,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     }
 
                     //Deal with a case when a user type Find-Package *
-                    if (String.Equals(tempName, "*", StringComparison.OrdinalIgnoreCase)) {
+                    if (String.Equals(tempName, "*", StringComparison.OrdinalIgnoreCase))
+                    {
                         //We use '' instead of "*" because searchterm='*' does not return the entire repository.
                         tempName = string.Empty;
                     }
@@ -1763,32 +1831,59 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     searchTerm = tempName;
                 }
 
+                if (!String.IsNullOrWhiteSpace(searchTerm))
+                {
+                    searchTerms.Add(new NuGetSearchTerm(NuGetSearchTerm.NuGetSearchTermType.SearchTerm, searchTerm));
+                    searchTermsDebugMessageBuilder.AppendFormat(CultureInfo.InvariantCulture, "searchTerm:{0}", searchTerm);
+                }
+
                 // Add the Tags for the search.
                 if (FilterOnTag != null)
                 {
                     // E.g. searchTerm = "tag:dscresource_xFirefox tag:command_Start-Process"
-                    searchTerm = FilterOnTag.Value.Where(tag => !string.IsNullOrWhiteSpace(tag)).Aggregate(searchTerm, (current, tag) => current + " tag:" + tag);
+                    foreach (string tag in FilterOnTag.Value.Where(tag => !string.IsNullOrWhiteSpace(tag)))
+                    {
+                        searchTerms.Add(new NuGetSearchTerm(NuGetSearchTerm.NuGetSearchTermType.Tag, tag));
+                        searchTermsDebugMessageBuilder.AppendFormat(CultureInfo.InvariantCulture, " tag:{0}", tag);
+                    }
                 }
 
-                Verbose(Resources.Messages.SearchingRepository, source.Repository.Source, searchTerm);
+                // Add Contains term for search
+                if (!string.IsNullOrWhiteSpace(Contains.Value))
+                {
+                    searchTerms.Add(new NuGetSearchTerm(NuGetSearchTerm.NuGetSearchTermType.Contains, Contains.Value));
+                    searchTermsDebugMessageBuilder.AppendFormat(CultureInfo.InvariantCulture, " contains:\"{0}\"", Contains.Value);
+                }
+
+                Verbose(Resources.Messages.SearchingRepository, source.Repository.Source, searchTermsDebugMessageBuilder.ToString());
 
                 // Handling case where a user does not provide Name parameter
-                var pkgs = source.Repository.Search(searchTerm, this);
+                NuGetSearchContext searchContext = new NuGetSearchContext()
+                {
+                    SearchTerms = searchTerms,
+                    AllowPrerelease = AllowPrereleaseVersions.Value,
+                    AllVersions = AllVersions.Value
+                };
+                NuGetSearchResult searchResult = source.Repository.Search(searchContext, this);
+                var pkgs = searchResult.Result;
 
-                if (!String.IsNullOrWhiteSpace(name))
+                if (!String.IsNullOrWhiteSpace(name) && searchResult.NamePostFilterRequired)
                 {
                     //Filter on the results. This is needed because we replace [...] regex in the searchterm at the begining of this method.
-                    pkgs = FilterOnName(pkgs, name, isNameContainsWildCard);
+                    pkgs = pkgs.Where(p => PackageFilterUtility.IsValidByName(new PackageEntryInfo(p.Id), searchContext));
                 }
 
-                pkgs = FilterOnContains(pkgs);
+                if (!String.IsNullOrWhiteSpace(Contains.Value) && searchResult.ContainsPostFilterRequired)
+                {
+                    pkgs = PackageFilterUtility.FilterOnContains(pkgs, Contains.Value);
+                }
 
                 var pkgsItem = pkgs.Select(pkg => new PackageItem
-                   {
-                       Package = pkg,
-                       PackageSource = source,
-                       FastPath = MakeFastPath(source, pkg.Id, pkg.Version.ToString())
-                   });
+                {
+                    Package = pkg,
+                    PackageSource = source,
+                    FastPath = MakeFastPath(source, pkg.Id, pkg.Version.ToString())
+                });
 
                 return pkgsItem;
             }

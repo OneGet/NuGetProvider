@@ -12,27 +12,42 @@
             get { return _default;}
         }
 
-        public virtual IPackageRepository CreateRepository(string packageSource, NuGetRequest request)
+        public IPackageRepository CreateRepository(PackageRepositoryCreateParameters parameters)
         {
-            if (packageSource == null)
+            if (parameters == null)
             {
-                throw new ArgumentNullException("packageSource");
+                throw new ArgumentNullException("parameters");
             }
 
-            // we cannot call new uri on file path on linux because it will error out
-            if (System.IO.Directory.Exists(packageSource))
+            if (parameters.Location == null)
             {
-                return new LocalPackageRepository(packageSource, request);
+                throw new ArgumentNullException("parameters.Location");
+            }
+            
+            if (parameters.Request == null)
+            {
+                throw new ArgumentNullException("parameters.Request");
             }
 
-            Uri uri = new Uri(packageSource);
-
-            if (uri.IsFile)
+            IPackageRepository repository = ConcurrentInMemoryCache.Instance.GetOrAdd<IPackageRepository>(parameters.Location, () =>
             {
-                return new LocalPackageRepository(uri.LocalPath, request);
-            }
+                // we cannot call new uri on file path on linux because it will error out
+                if (System.IO.Directory.Exists(parameters.Location))
+                {
+                    return new LocalPackageRepository(parameters.Location, parameters.Request);
+                }
 
-            return new HttpClientPackageRepository(packageSource, request);
+                Uri uri = new Uri(parameters.Location);
+
+                if (uri.IsFile)
+                {
+                    return new LocalPackageRepository(uri.LocalPath, parameters.Request);
+                }
+
+                return new NuGetPackageRepository(parameters);
+            });
+
+            return repository;
         }
     }
 }
