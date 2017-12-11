@@ -42,5 +42,6 @@
         List<PackageDependencySet> DependencySetList { get; }
         string PackageHash { get; }
         string PackageHashAlgorithm { get; }
+        bool IsPrerelease { get; }
     }
 }

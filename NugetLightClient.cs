@@ -34,7 +34,16 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
             request.Verbose(Messages.SearchingRepository, query, "");
 
-            return HttpClientPackageRepository.SendRequest(query, request);
+            return NuGetWebUtility.SendRequest(query, request);
+        }
+
+        internal static IEnumerable<PackageBase> FindPackage(string query, RequestWrapper request)
+        {
+            request.Debug(Messages.DebugInfoCallMethod, "NuGetClient", "FindPackage");
+
+            request.Verbose(Messages.SearchingRepository, query, "");
+
+            return NuGetWebUtility.SendRequest(query, request);
         }
 
         /// <summary>
@@ -257,7 +266,11 @@ namespace Microsoft.PackageManagement.NuGetProvider
             // If the source location exists as a directory then we try to get the file location and provide to the packagelocal
             if (Directory.Exists(pkgItem.PackageSource.Location))
             {
-                var fileLocation = pkgItem.PackageSource.Repository.FindPackage(pkgItem.Id, new SemanticVersion(pkgItem.Version), request).FullFilePath;
+                var fileLocation = pkgItem.PackageSource.Repository.FindPackage(new NuGetSearchContext()
+                {
+                    PackageInfo = new PackageEntryInfo(pkgItem.Id),
+                    RequiredVersion = new SemanticVersion(pkgItem.Version)
+                }, request).FullFilePath;
                 packageToBeInstalled = NuGetClient.InstallPackageLocal(pkgItem.Id, pkgItem.Version, request, pkgItem.PackageSource, fileLocation, progressTracker);
             }
             else
@@ -1198,19 +1211,26 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <param name="query">Uri query</param>
         /// <param name="request">An object passed in from the PackageManagement platform that contains APIs that can be used to interact with it </param>
         /// <returns></returns>
-        internal static Stream DownloadDataToStream(string query, NuGetRequest request)
+        internal static Stream DownloadDataToStream(string query, RequestWrapper request, bool ignoreNullResponse = false, int tries = 3)
         {
             request.Debug(Messages.DownloadingPackage, query);
 
-            var client = request.Client;
+            var client = request.GetClientWithHeaders();
 
-            var response = PathUtility.GetHttpResponse(client, query, (()=>request.IsCanceled),
-                ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg)=>request.Verbose(msg), (msg)=>request.Debug(msg));
+            var response = PathUtility.GetHttpResponse(client, query, (()=> request.IsCanceled()),
+                ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg)=> request.Verbose(msg), (msg)=> request.Debug(msg), remainingTry: tries);
 
             // Check that response was successful or throw exception
             if (response == null || !response.IsSuccessStatusCode)
             {
-                request.Warning(Resources.Messages.CouldNotGetResponseFromQuery, query);
+                if (!ignoreNullResponse)
+                {
+                    request.Warning(Resources.Messages.CouldNotGetResponseFromQuery, query);
+                } else
+                {
+                    request.Debug(Resources.Messages.CouldNotGetResponseFromQuery, query);
+                }
+
                 return null;
             }
 
@@ -1220,6 +1240,17 @@ namespace Microsoft.PackageManagement.NuGetProvider
             request.Debug(Messages.CompletedDownload, query);
 
             return stream;
+        }
+
+        /// <summary>
+        /// Download data from remote via uri query.
+        /// </summary>
+        /// <param name="query">Uri query</param>
+        /// <param name="request">An object passed in from the PackageManagement platform that contains APIs that can be used to interact with it </param>
+        /// <returns></returns>
+        internal static Stream DownloadDataToStream(string query, NuGetRequest request, bool ignoreNullResponse = false)
+        {
+            return DownloadDataToStream(query, new RequestWrapper(request), ignoreNullResponse);
         }
 
         /// <summary>
@@ -1235,12 +1266,17 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <returns></returns>
         internal static Stream InitialDownloadDataToStream(UriBuilder query, int startPoint, int bufferSize, NuGetRequest request)
         {
+            return InitialDownloadDataToStream(query, startPoint, bufferSize, new RequestWrapper(request));
+        }
+
+        internal static Stream InitialDownloadDataToStream(UriBuilder query, int startPoint, int bufferSize, RequestWrapper request)
+        {
             var uri = String.Format(CultureInfo.CurrentCulture, query.Uri.ToString(), startPoint, bufferSize);
             request.Debug(Messages.DownloadingPackage, uri);
 
-            var client = request.Client;
+            var client = request.GetClientWithHeaders();
 
-            var response = PathUtility.GetHttpResponse(client, uri, (() => request.IsCanceled),
+            var response = PathUtility.GetHttpResponse(client, uri, (() => request.IsCanceled()),
                ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg));
 
 

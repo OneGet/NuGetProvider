@@ -62,7 +62,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             //validate uri source location
             return ValidateUri(srcUri, request) != null;
         }
-
+        
         /// <summary>
         /// Returns the validated uri. Returns null if we cannot validate it
         /// </summary>
@@ -71,6 +71,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <returns></returns>
         internal static Uri ValidateUri(Uri query, NuGetRequest request)
         {
+            // Validation takes place in two steps:
+            //  1. Validate the given URI is valid, resolving redirection
+            //  2. Validate we can hit the query service
             var client = request.ClientWithoutAcceptHeader;
 
             var response = PathUtility.GetHttpResponse(client, query.AbsoluteUri, (() => request.IsCanceled),
@@ -115,18 +118,16 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 query = new Uri(response.RequestMessage.RequestUri.AbsoluteUri);
             }
 
-            //Making a query like: www.nuget.org/api/v2/FindPackagesById()?id='FoooBarr' to check the server available. 
-            //'FoooBarr' is an any random package id
-            string queryUri = "FoooBarr".MakeFindPackageByIdQuery(PathUtility.UriCombine(query.AbsoluteUri, NuGetConstant.FindPackagesById));
-
-            response = PathUtility.GetHttpResponse(client, queryUri, (() => request.IsCanceled),
-                ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg));
-
-
-            // The link is not valid
-            if (response == null || !response.IsSuccessStatusCode)
+            IPackageRepository repo = PackageRepositoryFactory.Default.CreateRepository(new PackageRepositoryCreateParameters(query.AbsoluteUri, request, locationValid: true));
+            if (repo.ResourceProvider != null)
             {
-                return null;
+                // If the query feed exists, it's a non-local repo
+                // Check the query feed to make sure it's available
+                // Optionally we could change this to check the packages feed for availability
+                if (repo.ResourceProvider.QueryFeed == null || !repo.ResourceProvider.QueryFeed.IsAvailable(new RequestWrapper(request)))
+                {
+                    return null;
+                }
             }
 
             return query;

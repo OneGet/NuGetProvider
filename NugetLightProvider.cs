@@ -332,7 +332,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             if (request == null){
                 throw new ArgumentNullException("request");
             }
-
+            
             // true if we want to include the max and min version
             bool minInclusive = true;
             bool maxInclusive = true;
@@ -449,9 +449,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     request.WriteError(ErrorCategory.InvalidArgument, fastPackageReference, Constants.Messages.UnableToResolvePackage);
                     return;
                 }
-
-                NuGetClient.InstallOrDownloadPackageHelper(pkgItem, request, Constants.Download,
-                    (packageItem, progressTracker) => NuGetClient.DownloadSinglePackage(packageItem, request, destLocation, progressTracker));
+                
+                pkgItem.PackageSource.Repository.DownloadPackage(new PublicObjectView(pkgItem), destLocation, request);
             } catch (Exception ex) {
                 ex.Dump(request);
                 request.WriteError(ErrorCategory.InvalidOperation, fastPackageReference, ex.Message);
@@ -489,8 +488,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 request.Debug(Resources.Messages.VariableCheck, "Request's Destination", request.Destination);
 
                 // got this far, let's install the package we came here for.
-                if (!NuGetClient.InstallOrDownloadPackageHelper(pkgItem, request, Constants.Install,
-                    (packageItem, progressTracker) => NuGetClient.InstallSinglePackage(packageItem, request, progressTracker)))
+                if (!pkgItem.PackageSource.Repository.InstallPackage(new PublicObjectView(pkgItem), request))
                 {
                     // package itself didn't install. Write error
                     request.WriteError(ErrorCategory.InvalidResult, pkgItem.Id, Constants.Messages.PackageFailedInstallOrDownload, pkgItem.Id, CultureInfo.CurrentCulture.TextInfo.ToLower(Constants.Install));

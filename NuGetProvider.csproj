@@ -1,0 +1,106 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net451;netcoreapp2.0;netstandard1.6</TargetFrameworks>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <DelaySign>true</DelaySign>
+    <AssemblyName>Microsoft.PackageManagement.NuGetProvider</AssemblyName>
+    <AssemblyOriginatorKeyFile>35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <PackageId>NuGetProvider</PackageId>
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
+    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
+    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" ('$(TargetFramework)' == 'net451') Or ('$(TargetFramework)' == 'netstandard1.6') ">
+    <PackageReference Include="System.Management.Automation" Version="1.0.0-alpha9" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
+    <PackageReference Include="System.Management.Automation" Version="6.0.0-beta.2" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.DirectoryServices" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Transactions" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Configuration.Install" />
+    <Reference Include="System.Net" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
+    <Compile Remove="resources\Messages.Designer.cs" />
+    <EmbeddedResource Remove="resources\Messages.resx" />
+    <Compile Include="..\Microsoft.PackageManagement\providers\inbox\Common\Extensions\Extensions.cs;..\Microsoft.PackageManagement\providers\inbox\Common\Utility\*.cs;..\Microsoft.PackageManagement\providers\inbox\Common\Version\*.cs;..\Microsoft.PackageManagement\Utility\Platform\OSInformation.cs" Exclude="resources\Messages.Designer.cs;bin\**;obj\**;**\*.xproj;packages\**" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
+    <DefineConstants>$(DefineConstants);CORECLR</DefineConstants>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
+    <DefineConstants>$(DefineConstants);CORECLR;COREv1</DefineConstants>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net451' ">
+    <DefineConstants>$(DefineConstants);$(USEDEEPMETADATABYPASS)</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" ('$(TargetFramework)' == 'netcoreapp2.0') Or ('$(TargetFramework)' == 'netstandard1.6') ">
+    <Compile Remove="resources\Messages.Designer.cs" />
+    <EmbeddedResource Remove="resources\Messages.resx" />
+    <Compile Include="..\Microsoft.PackageManagement\providers\inbox\Common\Extensions\Extensions.cs;..\Microsoft.PackageManagement\providers\inbox\Common\Utility\*.cs;..\Microsoft.PackageManagement\providers\inbox\Common\Version\*.cs;..\Microsoft.PackageManagement\Utility\Platform\OSInformation.cs" Exclude="resources\Messages.Designer.cs;bin\**;obj\**;**\*.xproj;packages\**" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
+    <PackageReference Include="Microsoft.CSharp" Version="4.4.0-preview1-25305-02" />
+    <PackageReference Update="Microsoft.NETCore.App" Version="2.0.0-preview1-002111-00" />
+    <PackageReference Include="Microsoft.Win32.Registry.AccessControl" Version="4.4.0-preview1-25305-02" />
+    <PackageReference Include="NETStandard.Library" Version="2.0.0-preview2-25401-01" />
+    <PackageReference Include="System.IO.FileSystem.AccessControl" Version="4.4.0-preview1-25305-02" />
+    <PackageReference Include="System.Security.AccessControl" Version="4.4.0-preview1-25305-02" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="4.4.0-preview1-25305-02" />
+    <PackageReference Include="System.Security.Principal.Windows" Version="4.4.0-preview1-25305-02" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.4.0-preview1-25305-02" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
+    <PackageReference Include="System.Linq.Parallel" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="NuGetResources\FilterEntryByContains.cs" />
+    <Compile Remove="NuGetResources\IPackageFilter.cs" />
+  </ItemGroup>
+  
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="('$(EMBEDPROVIDERMANIFEST)' == 'true') AND ('$(PROVIDERROOTDIR)' == '')">
+    <Exec Command="echo Embedding provider manifest '$(ProjectDir)'" />
+	<Exec Command="$(ProjectDir)\..\..\tools\mt.exe -manifest $(ProjectDir)\provider.manifest -outputresource:$(TargetPath);#101" />
+  </Target>
+  
+  <Target Name="PostBuild2" AfterTargets="PostBuildEvent" Condition="('$(EMBEDPROVIDERMANIFEST)' == 'true') AND ('$(PROVIDERROOTDIR)' != '')">
+    <Exec Command="echo Embedding provider manifest '$(MANIFESTROOTDIR)\provider.manifest'" />
+	<Exec Command="$(PROVIDERROOTDIR)\..\..\tools\mt.exe -manifest $(MANIFESTROOTDIR)\provider.manifest -outputresource:$(TargetPath);#101" />
+  </Target>
+</Project>
