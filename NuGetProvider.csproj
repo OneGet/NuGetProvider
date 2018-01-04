@@ -94,13 +94,8 @@
     <Compile Remove="NuGetResources\IPackageFilter.cs" />
   </ItemGroup>
   
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="('$(EMBEDPROVIDERMANIFEST)' == 'true') AND ('$(PROVIDERROOTDIR)' == '')">
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="echo Embedding provider manifest '$(ProjectDir)'" />
-	<Exec Command="$(ProjectDir)\..\..\tools\mt.exe -manifest $(ProjectDir)\provider.manifest -outputresource:&quot;$(TargetPath);#101&quot;" />
-  </Target>
-  
-  <Target Name="PostBuild2" AfterTargets="PostBuildEvent" Condition="('$(EMBEDPROVIDERMANIFEST)' == 'true') AND ('$(PROVIDERROOTDIR)' != '')">
-    <Exec Command="echo Embedding provider manifest '$(MANIFESTROOTDIR)\provider.manifest'" />
-	<Exec Command="$(PROVIDERROOTDIR)\..\..\tools\mt.exe -manifest $(MANIFESTROOTDIR)\provider.manifest -outputresource:&quot;$(TargetPath);#101&quot;" />
+	  <Exec Command="$(ProjectDir)\tools\mt.exe -manifest $(ProjectDir)\provider.manifest -outputresource:&quot;$(TargetPath);#101&quot;" />
   </Target>
 </Project>
