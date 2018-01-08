@@ -37,7 +37,7 @@ try {
                 $null = New-Item -Path $newDir -ItemType Directory
             }
             Write-Host "Updating file: $newFilePath"
-            $content | Out-File -FilePath $newFilePath
+            $content | Out-File -FilePath $newFilePath -Encoding UTF8
         }
     }
 }
