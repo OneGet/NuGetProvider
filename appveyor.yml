@@ -11,12 +11,17 @@ init:
 
 install:
 
-- git clone --branch=master https://github.com/OneGet/oneget.git c:\projects\NuGetTest\OneGet
 - ps: $psversiontable
 - reg ADD "HKLM\Software\Microsoft\StrongName\Verification\Microsoft.PackageManagement.NuGetProvider,31bf3856ad364e35"  /f
 - reg ADD "HKLM\Software\Wow6432Node\Microsoft\StrongName\Verification\Microsoft.PackageManagement.NuGetProvider,31bf3856ad364e35"  /f
 
-
+before_build:
+- ps: >-
+    & "c:\projects\NuGetTest\NuGetProvider\Generate-Resources.ps1"
+    $null = Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile (Join-Path -Path c:\projects\NuGetTest\NuGetProvider\nuget.exe)
+    pushd c:\projects\NuGetTest\NuGetProvider\vs-csproj
+    c:\projects\NuGetTest\NuGetProvider\nuget.exe restore -PackagesDirectory c:\projects\NuGetTest\NuGetProvider\vs-csproj\packages
+    popd
 build_script:
   - msbuild "c:\projects\NuGetTest\NuGetProvider\vs-csproj\NugetLightProvider.csproj" /verbosity:normal
 after_build:

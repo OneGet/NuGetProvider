@@ -30,7 +30,7 @@
     <SolutionRootDir>$(SolutionDir)</SolutionRootDir>
     <!-- Defaults to .Net 4.0 -->
     <TargetFrameworkVersion Condition="$(TargetFrameworkVersion) == '' Or $(TargetFrameworkVersion) == '*Undefined*'">v4.0</TargetFrameworkVersion>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <OutputPath>$(SolutionRootDir)..\output\$(Configuration)\bin\</OutputPath>
     <BaseIntermediateOutputPath>$(SolutionRootDir)..\intermediate\$(TargetFrameworkVersion.Replace(".",""))\$(Configuration)\$(AssemblyName)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
@@ -63,47 +63,104 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\NuGetExtensions.cs" />
+	<Compile Include="..\NugetLightClient.cs" />
     <Compile Include="..\NugetLightConstant.cs" />
-    <Compile Include="..\Package\PackageDependencySet.cs" />
-    <Compile Include="..\Package\PackageName.cs">
+	<Compile Include="..\NugetLightProvider.cs" />
+	<Compile Include="..\NugetLightRequest.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="..\Properties\AssemblyInfo.cs" />
-    <Compile Include="..\Repository\HttpClientPackageRepository.cs" />
-    <Compile Include="..\Package\IPackage.cs" />
+	<Compile Include="..\PackageSource.cs" />
+	
+	<Compile Include="..\NuGetResources\INuGetAbuseFeed.cs" />
+	<Compile Include="..\NuGetResources\INuGetAutoCompleteFeed.cs" />
+	<Compile Include="..\NuGetResources\INuGetFeed.cs" />
+	<Compile Include="..\NuGetResources\INuGetFilesFeed.cs" />
+	<Compile Include="..\NuGetResources\INuGetGalleryFeed.cs" />
+	<Compile Include="..\NuGetResources\INuGetPackageFeed.cs" />
+	<Compile Include="..\NuGetResources\INuGetQueryFeed.cs" />
+	<Compile Include="..\NuGetResources\INuGetResource.cs" />
+	<Compile Include="..\NuGetResources\INuGetResourceCollection.cs" />
+	<Compile Include="..\NuGetResources\NuGetAbuseFeed3.cs" />
+	<Compile Include="..\NuGetResources\NuGetAutoCompleteFeed3.cs" />
+	<Compile Include="..\NuGetResources\NuGetFilesFeed2.cs" />
+	<Compile Include="..\NuGetResources\NuGetFilesFeed3.cs" />
+	<Compile Include="..\NuGetResources\NuGetGalleryFeedMyGet.cs" />
+	<Compile Include="..\NuGetResources\NuGetGalleryFeedOrg.cs" />
+	<Compile Include="..\NuGetResources\NuGetLocalPackageFeed.cs" />
+	<Compile Include="..\NuGetResources\NuGetPackageFeed2.cs" />
+	<Compile Include="..\NuGetResources\NuGetPackageFeed3.cs" />
+	<Compile Include="..\NuGetResources\NuGetQueryFeed2.cs" />
+	<Compile Include="..\NuGetResources\NuGetQueryFeed3.cs" />
+	<Compile Include="..\NuGetResources\NuGetRemoteFeedBase.cs" />
+	<Compile Include="..\NuGetResources\NuGetResourceCollection2.cs" />
+	<Compile Include="..\NuGetResources\NuGetResourceCollection3.cs" />
+	<Compile Include="..\NuGetResources\NuGetResourceCollectionBase.cs" />
+	<Compile Include="..\NuGetResources\NuGetResourceCollectionFactory.cs" />
+	<Compile Include="..\NuGetResources\NuGetResourceCollectionLocal.cs" />
+	<Compile Include="..\NuGetResources\NuGetServiceInfo.cs" />
+	<Compile Include="..\NuGetResources\NuGetServiceType.cs" />
+	
+	<Compile Include="..\Package\IPackage.cs" />
     <Compile Include="..\Package\IPackageName.cs" />
-    <Compile Include="..\Repository\IPackageRepository.cs" />
+	<Compile Include="..\Package\PackageBase.cs" />
+	<Compile Include="..\Package\PackageDependency.cs" />
+	<Compile Include="..\Package\PackageDependencySet.cs" />
+	<Compile Include="..\Package\PackageItem.cs" />
+	<Compile Include="..\Package\PackageName.cs">
+      <SubType>Code</SubType>
+    </Compile>
+	
+	<Compile Include="..\Repository\IPackageRepository.cs" />
     <Compile Include="..\Repository\IPackageRepositoryFactory.cs" />
     <Compile Include="..\Repository\LocalPackageRepository.cs" />
-    <Compile Include="..\Package\PackageBase.cs" />
-    <Compile Include="..\NugetLightClient.cs" />
-    <Compile Include="..\Package\PackageDependency.cs" />
-    <Compile Include="..\Utility\NuGetPathUtility.cs" />
-    <Compile Include="..\Utility\PackageUtility.cs" />
-    <Compile Include="..\Package\PackageItem.cs" />
+	<Compile Include="..\Repository\NuGetPackageRepository.cs" />
+	<Compile Include="..\Repository\NuGetSearchContext.cs" />
+	<Compile Include="..\Repository\NuGetSearchTerm.cs" />
+	<Compile Include="..\Repository\PackageEntryInfo.cs" />
+	<Compile Include="..\Repository\PackageRepositoryCreateParameters.cs" />
     <Compile Include="..\Repository\PackageRepositoryFactory.cs" />
-    <Compile Include="..\PackageSource.cs" />
-    <Compile Include="..\NugetLightRequest.cs">
-      <SubType>Code</SubType>
+    
+    <Compile Include="..\Properties\AssemblyInfo.cs" />
+    
+    <Compile Include="..\gen\Microsoft.PackageManagement.NuGetProvider.Resources.Messages.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Messages.resx</DependentUpon>
     </Compile>
-    <Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Utility\PathUtility.cs" />
+    
+    <Compile Include="..\Sdk\Constants.cs" />
+    <Compile Include="..\Sdk\ErrorCategory.cs" />
+	<Compile Include="..\Sdk\IRequestOutput.cs" />
+	<Compile Include="..\Sdk\NuGetRequestOutput.cs" />
+	<Compile Include="..\Sdk\NullRequestOutput.cs" />
+    <Compile Include="..\Sdk\Request.cs" />
+    <Compile Include="..\Sdk\RequestWrapper.cs" />
+	
+	<Compile Include="..\Utility\CatalogUrlConverter.cs" />
+	<Compile Include="..\Utility\ConcurrentInMemoryCache.cs" />
+	<Compile Include="..\Utility\DependencyGroupConverter.cs" />
+	<Compile Include="..\Utility\DynamicJsonParser.cs" />
+	<Compile Include="..\Utility\HttpQueryBuilder.cs" />
+	<Compile Include="..\Utility\IDynamicJsonObjectConverter.cs" />
+    <Compile Include="..\Utility\NuGetPathUtility.cs" />
+	<Compile Include="..\Utility\NuGetWebUtility.cs" />
+	<Compile Include="..\Utility\PackageBaseConverter.cs" />
+	<Compile Include="..\Utility\PackageDependencyConverter.cs" />
+	<Compile Include="..\Utility\PackageFilterUtility.cs" />
+    <Compile Include="..\Utility\PackageUtility.cs" />
+    <Compile Include="..\Utility\ProgressTracker.cs" />
+	<Compile Include="..\Utility\PublicObjectView.cs" />
+    <Compile Include="..\Utility\TaskGroup.cs" />
+    
+    
+    <!--<Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Utility\PathUtility.cs" />
     <Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Utility\FileUtility.cs" />
     <Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Utility\XmlUtility.cs" />
     <Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Version\DependencyVersion.cs" />
     <Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Version\SemanticVersion.cs" />
     <Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Version\SemanticVersionTypeConverter.cs" />
     <Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Providers\Inbox\Common\Extensions\Extensions.cs" />
-    <Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Utility\Platform\OSInformation.cs" />
-    <Compile Include="..\NugetLightProvider.cs" />
-    <Compile Include="..\Sdk\Constants.cs" />
-    <Compile Include="..\Sdk\ErrorCategory.cs" />
-    <Compile Include="..\Sdk\Request.cs" />
-    <Compile Include="..\Resources\Messages.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Messages.resx</DependentUpon>
-    </Compile>
-    <Compile Include="..\Utility\ProgressTracker.cs" />
+    <Compile Include="..\..\oneget\src\Microsoft.PackageManagement\Utility\Platform\OSInformation.cs" />-->
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\Resources\Messages.resx">
@@ -131,16 +188,21 @@
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="WindowsBase" />
+	<Reference Include="Microsoft.PowerShell.PackageManagement.Core">
+	  <HintPath>.\packages\Microsoft.PowerShell.PackageManagement.Core.1.2.1-preview\lib\net45\Microsoft.PackageManagement.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
     <None Include="..\35MSSharedLib1024.snk" />
     <None Include="..\provider.manifest" />
+	<None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>:Locate MT.EXE Tool:
-set MTEXE=$(ProjectDir)\..\..\oneget\tools\mt.exe
+set MTEXE=$(ProjectDir)\..\tools\mt.exe
 
 :Run the tool to add the manifest to the binary.
 
