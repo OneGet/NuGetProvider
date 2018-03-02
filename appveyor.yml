@@ -16,7 +16,7 @@ install:
 - reg ADD "HKLM\Software\Wow6432Node\Microsoft\StrongName\Verification\Microsoft.PackageManagement.NuGetProvider,31bf3856ad364e35"  /f
 
 before_build:
-- ps: >-
+  - ps: |
     & "c:\projects\NuGetTest\NuGetProvider\Generate-Resources.ps1"
     $null = Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile c:\projects\NuGetTest\NuGetProvider\nuget.exe
     pushd c:\projects\NuGetTest\NuGetProvider\vs-csproj
