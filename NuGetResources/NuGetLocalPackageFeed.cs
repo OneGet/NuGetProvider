@@ -26,8 +26,11 @@ namespace Microsoft.PackageManagement.NuGetProvider
     {
         public INuGetResourceCollection ResourcesCollection { get; set; }
 
-        public NuGetSearchResult Find(NuGetSearchContext findContext, NuGetRequest request) => throw new NotImplementedException();
-
+        public NuGetSearchResult Find(NuGetSearchContext findContext, NuGetRequest request) 
+		{
+			throw new NotImplementedException();
+		}
+		
         public bool DownloadPackage(PublicObjectView packageView, string destination, NuGetRequest request)
         {
             return DownloadPackage(packageView, destination, new RequestWrapper(request));
@@ -38,7 +41,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
             return InstallPackage(packageView, new RequestWrapper(request));
         }
 
-        public bool IsAvailable(RequestWrapper request) => true;
+        public bool IsAvailable(RequestWrapper request)
+		{
+			return true;
+		}
 
         /// <summary>
         /// No download URI.
