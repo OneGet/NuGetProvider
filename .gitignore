@@ -68,7 +68,6 @@ Temporary Items
 35MSSharedLib1024.snk
 
 # NuGet packaging
-*.nuspec
 nuget.exe
 *.nupkg
 *.nuspec_template
