@@ -18,7 +18,7 @@ install:
 before_build:
 - ps: >-
     & "c:\projects\NuGetTest\NuGetProvider\Generate-Resources.ps1"
-    $null = Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile (Join-Path -Path c:\projects\NuGetTest\NuGetProvider\nuget.exe)
+    $null = Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile c:\projects\NuGetTest\NuGetProvider\nuget.exe
     pushd c:\projects\NuGetTest\NuGetProvider\vs-csproj
     c:\projects\NuGetTest\NuGetProvider\nuget.exe restore -PackagesDirectory c:\projects\NuGetTest\NuGetProvider\vs-csproj\packages
     popd
