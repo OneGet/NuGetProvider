@@ -139,7 +139,7 @@ try {
     }
 
     if (Test-Path -path $tempDir) {
-        Write-Error "Failed to remove temp directory: $tempDir"
+        Write-Warning "Failed to remove temp directory: $tempDir"
     }
 }
 
