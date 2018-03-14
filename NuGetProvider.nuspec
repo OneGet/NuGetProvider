@@ -5,8 +5,8 @@
     <version>{version}</version>
     <authors>{authors}</authors>
     <owners>{owners}</owners>
-    <licenseUrl>https://github.com/OneGet/oneget/blob/master/LICENSE</licenseUrl>
-    <projectUrl>https://github.com/OneGet/oneget</projectUrl>
+    <licenseUrl>https://github.com/OneGet/NuGetProvider/blob/master/LICENSE.txt</licenseUrl>
+    <projectUrl>https://github.com/OneGet/NuGetProvider</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>NuGetProvider is a OneGet (PackageManagement) provider.
 It primarily supports finding and installing packages from [NuGet.org][nugetorg].
@@ -17,5 +17,8 @@ It supports FullCLR and CoreCLR, meaning works for Windows, Linux, and OSX as pa
     <releaseNotes>{releaseNotes}</releaseNotes>
     <copyright>Copyright 2018</copyright>
     <tags>PowerShell PackageManagement OneGet PSCore NuGet PackageManagementProvider v2 v3</tags>
+    <dependencies>
+      <dependency id="Microsoft.PowerShell.PackageManagement.Core" version="1.2.1-preview" />
+    </dependencies>
   </metadata>
 </package>
