@@ -45,12 +45,12 @@
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
+    <PackageReference Include="Microsoft.PowerShell.PackageManagement.Core" Version="1.2.1-preview" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
     <Compile Remove="resources\Messages.Designer.cs" />
     <EmbeddedResource Remove="resources\Messages.resx" />
-    <Compile Include="..\Microsoft.PackageManagement\providers\inbox\Common\Extensions\Extensions.cs;..\Microsoft.PackageManagement\providers\inbox\Common\Utility\*.cs;..\Microsoft.PackageManagement\providers\inbox\Common\Version\*.cs;..\Microsoft.PackageManagement\Utility\Platform\OSInformation.cs" Exclude="resources\Messages.Designer.cs;bin\**;obj\**;**\*.xproj;packages\**" />
   </ItemGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
@@ -64,13 +64,12 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net451' ">
-    <DefineConstants>$(DefineConstants);$(USEDEEPMETADATABYPASS)</DefineConstants>
+    <DefineConstants>$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition=" ('$(TargetFramework)' == 'netcoreapp2.0') Or ('$(TargetFramework)' == 'netstandard1.6') ">
     <Compile Remove="resources\Messages.Designer.cs" />
     <EmbeddedResource Remove="resources\Messages.resx" />
-    <Compile Include="..\Microsoft.PackageManagement\providers\inbox\Common\Extensions\Extensions.cs;..\Microsoft.PackageManagement\providers\inbox\Common\Utility\*.cs;..\Microsoft.PackageManagement\providers\inbox\Common\Version\*.cs;..\Microsoft.PackageManagement\Utility\Platform\OSInformation.cs" Exclude="resources\Messages.Designer.cs;bin\**;obj\**;**\*.xproj;packages\**" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
@@ -83,24 +82,16 @@
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="4.4.0-preview1-25305-02" />
     <PackageReference Include="System.Security.Principal.Windows" Version="4.4.0-preview1-25305-02" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="4.4.0-preview1-25305-02" />
+	<PackageReference Include="Microsoft.PowerShell.PackageManagement.Core" Version="1.2.1-preview" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
     <PackageReference Include="System.Linq.Parallel" Version="4.3.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="NuGetResources\FilterEntryByContains.cs" />
-    <Compile Remove="NuGetResources\IPackageFilter.cs" />
+	<PackageReference Include="Microsoft.PowerShell.PackageManagement.Core" Version="1.2.1-preview" />
   </ItemGroup>
   
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="('$(EMBEDPROVIDERMANIFEST)' == 'true') AND ('$(PROVIDERROOTDIR)' == '')">
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="echo Embedding provider manifest '$(ProjectDir)'" />
-	<Exec Command="$(ProjectDir)\..\..\tools\mt.exe -manifest $(ProjectDir)\provider.manifest -outputresource:&quot;$(TargetPath);#101&quot;" />
-  </Target>
-  
-  <Target Name="PostBuild2" AfterTargets="PostBuildEvent" Condition="('$(EMBEDPROVIDERMANIFEST)' == 'true') AND ('$(PROVIDERROOTDIR)' != '')">
-    <Exec Command="echo Embedding provider manifest '$(MANIFESTROOTDIR)\provider.manifest'" />
-	<Exec Command="$(PROVIDERROOTDIR)\..\..\tools\mt.exe -manifest $(MANIFESTROOTDIR)\provider.manifest -outputresource:&quot;$(TargetPath);#101&quot;" />
+	  <Exec Command="$(ProjectDir)\tools\mt.exe -manifest $(ProjectDir)\provider.manifest -outputresource:&quot;$(TargetPath);#101&quot;" />
   </Target>
 </Project>
