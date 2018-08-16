@@ -151,37 +151,20 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
                     xmlDoc.LoadXml(xmlString);
                     XmlNodeList metadataNodeList = xmlDoc.GetElementsByTagName("metadata");
-                    List<string> propertyList = new List<string>();
 
-                    // Create a list of the child tags of metadata (id, version, etc.)
                     foreach (XmlNode node in metadataNodeList)
                     {
-                        String text = node.InnerXml;
-                        string pat = @"<(\w+)";
-
-                        Regex regex = new Regex(pat, RegexOptions.IgnoreCase);
-                        Match match = regex.Match(text);
-
-                        while (match.Success)
+                        if (node.HasChildNodes)
                         {
-                            Group group = match.Groups[1];
-                            propertyList.Add(group.ToString());
-                            match = match.NextMatch();
-                        }
-                    }
+                            // Adding VSTS feed metadata values to the object containing nupkg property information
+                            for (int i = 0; i < node.ChildNodes.Count; i++)
+                            {
+                                string property = node.ChildNodes[i].Name;
+                                string propertyVal = node.ChildNodes[i].InnerText;
 
-                    // Adding VSTS feed metadata values to the object containing nupkg property information
-                    foreach (string property in propertyList)
-                    {
-                        XmlNodeList nodeList = xmlDoc.GetElementsByTagName(property);
-
-                        string propertyVal = string.Empty;
-                        foreach (XmlNode node in nodeList)
-                        {
-                            propertyVal = node.InnerText;
-
-                            object actualPropertyVal = ConvertObject(propertyVal);
-                            ((IDictionary<string, object>)actualObj)[property] = actualPropertyVal;
+                                object actualPropertyVal = ConvertObject(propertyVal);
+                                ((IDictionary<string, object>)actualObj)[property] = actualPropertyVal;
+                            }
                         }
                     }
                 }
