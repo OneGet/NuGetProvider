@@ -21,6 +21,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
     using System.Linq;
     using System.Management.Automation;
     using System.Reflection;
+    using System.Text.RegularExpressions;
+    using System.Xml;
 
 
     /// <summary>
@@ -133,6 +135,55 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 if (lowercaseProperties)
                 {
                     propertyName = propertyName.ToLowerInvariant();
+                }
+
+                // Nuspec contains xml metadata as a string (only applicable to VSTS feeds)
+                if (propertyName == "nuspec")
+                {
+                    XmlDocument xmlDoc = new XmlDocument();
+                    string xmlString = (string)psProperty.Value;
+
+                    if (xmlString[0] != '<')
+                    {
+                        var strIndex = xmlString.IndexOf('<');
+                        xmlString = xmlString.Substring(strIndex, xmlString.Length - 1);
+                    }
+
+                    xmlDoc.LoadXml(xmlString);
+                    XmlNodeList metadataNodeList = xmlDoc.GetElementsByTagName("metadata");
+                    List<string> propertyList = new List<string>();
+
+                    // Create a list of the child tags of metadata (id, version, etc.)
+                    foreach (XmlNode node in metadataNodeList)
+                    {
+                        String text = node.InnerXml;
+                        string pat = @"<(\w+)";
+
+                        Regex regex = new Regex(pat, RegexOptions.IgnoreCase);
+                        Match match = regex.Match(text);
+
+                        while (match.Success)
+                        {
+                            Group group = match.Groups[1];
+                            propertyList.Add(group.ToString());
+                            match = match.NextMatch();
+                        }
+                    }
+
+                    // Adding VSTS feed metadata values to the object containing nupkg property information
+                    foreach (string property in propertyList)
+                    {
+                        XmlNodeList nodeList = xmlDoc.GetElementsByTagName(property);
+
+                        string propertyVal = string.Empty;
+                        foreach (XmlNode node in nodeList)
+                        {
+                            propertyVal = node.InnerText;
+
+                            object actualPropertyVal = ConvertObject(propertyVal);
+                            ((IDictionary<string, object>)actualObj)[property] = actualPropertyVal;
+                        }
+                    }
                 }
 
                 object actualVal = ConvertObject(psProperty.Value);

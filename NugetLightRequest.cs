@@ -1565,7 +1565,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 // unlisted version is the one that has published year as 1900
                 if (!exactVersionRequired)
                 {
-                    pkgs = pkgs.Where(pkg => pkg.Published.HasValue && pkg.Published.Value.Year > 1900);
+                    pkgs = pkgs.Where(pkg => ((pkg.Published == null) || (pkg.Published.HasValue && pkg.Published.Value.Year > 1900)));
                 }
 
                 if (AllVersions.Value)
