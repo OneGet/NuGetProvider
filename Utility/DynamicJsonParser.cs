@@ -143,6 +143,11 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     XmlDocument xmlDoc = new XmlDocument();
                     string xmlString = (string)psProperty.Value;
 
+                    if (string.IsNullOrWhiteSpace(xmlString))
+                    {
+                        throw new ArgumentNullException("xmlString");
+                    }
+
                     if (xmlString[0] != '<')
                     {
                         var strIndex = xmlString.IndexOf('<');
