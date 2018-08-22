@@ -21,7 +21,6 @@ namespace Microsoft.PackageManagement.NuGetProvider
     using System.Linq;
     using System.Management.Automation;
     using System.Reflection;
-    using System.Text.RegularExpressions;
     using System.Xml;
 
 
@@ -102,7 +101,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
             return result.ImmediateBaseObject as string;
         }
-        
+
         private static dynamic GetDynamic(PSObject obj, string numericalPrefix = "n", bool lowercaseProperties = true)
         {
             dynamic res = new ExpandoObject();
@@ -167,8 +166,12 @@ namespace Microsoft.PackageManagement.NuGetProvider
                                 string property = node.ChildNodes[i].Name;
                                 string propertyVal = node.ChildNodes[i].InnerText;
 
-                                object actualPropertyVal = ConvertObject(propertyVal);
-                                ((IDictionary<string, object>)actualObj)[property] = actualPropertyVal;
+                                // Check if the property already exists in the object so we don't overwrite it
+                                if (!((IDictionary<string, object>)actualObj).ContainsKey(property))
+                                {
+                                    object actualPropertyVal = ConvertObject(propertyVal);
+                                    ((IDictionary<string, object>)actualObj)[property] = actualPropertyVal;
+                                }
                             }
                         }
                     }
