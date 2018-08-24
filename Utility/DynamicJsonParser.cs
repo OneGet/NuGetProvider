@@ -137,9 +137,26 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 }
 
                 // Nuspec contains xml metadata as a string (only applicable to VSTS feeds)
-                if (propertyName == "nuspec")
+                // Example nuspec property:
+                // "nuspec":"<?xml version=\"1.0\" encoding=\"utf-8\"?>
+                //           <package xmlns=\"http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd\">
+                //                <metadata>
+                //                      <id>Microsoft.Kusto.Tools</id>
+                //                      <version>1.0.6</version>
+                //                      <title>Kusto Tools</title>
+                //                      <authors>Microsoft</authors>
+                //                      <owners>Microsoft</owners>
+                //                      <requireLicenseAcceptance>false</requireLicenseAcceptance>
+                //                      <licenseUrl>http://kusto.blob.core.windows.net/kusto-nuget/EULA-agreement.htm</licenseUrl>
+                //                      <projectUrl>http://aka.ms/kdocs</projectUrl>
+                //                      <iconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</iconUrl>
+                //                      <description>Kusto Tools</description>
+                //                      <releaseNotes>1.0.6: LightIngest refactored</releaseNotes>
+                //                      <copyright>Copyright ©  Microsoft Corporation</copyright>
+                //              </metadata>
+                //          </package>"
+                if (string.Equals(propertyName, "nuspec", StringComparison.OrdinalIgnoreCase))
                 {
-                    XmlDocument xmlDoc = new XmlDocument();
                     string xmlString = (string)psProperty.Value;
 
                     if (string.IsNullOrWhiteSpace(xmlString))
@@ -153,27 +170,35 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         xmlString = xmlString.Substring(strIndex, xmlString.Length - 1);
                     }
 
-                    xmlDoc.LoadXml(xmlString);
-                    XmlNodeList metadataNodeList = xmlDoc.GetElementsByTagName("metadata");
-
-                    foreach (XmlNode node in metadataNodeList)
+                    try
                     {
-                        if (node.HasChildNodes)
-                        {
-                            // Adding VSTS feed metadata values to the object containing nupkg property information
-                            for (int i = 0; i < node.ChildNodes.Count; i++)
-                            {
-                                string property = node.ChildNodes[i].Name;
-                                string propertyVal = node.ChildNodes[i].InnerText;
+                        XmlDocument xmlDoc = new XmlDocument();
+                        xmlDoc.LoadXml(xmlString);
+                        XmlNodeList metadataNodeList = xmlDoc.GetElementsByTagName("metadata");
 
-                                // Check if the property already exists in the object so we don't overwrite it
-                                if (!((IDictionary<string, object>)actualObj).ContainsKey(property))
+                        foreach (XmlNode node in metadataNodeList)
+                        {
+                            if (node.HasChildNodes)
+                            {
+                                // Adding VSTS feed metadata values to the object containing nupkg property information
+                                for (int i = 0; i < node.ChildNodes.Count; i++)
                                 {
-                                    object actualPropertyVal = ConvertObject(propertyVal);
-                                    ((IDictionary<string, object>)actualObj)[property] = actualPropertyVal;
+                                    string property = node.ChildNodes[i].Name;
+                                    string propertyVal = node.ChildNodes[i].InnerText;
+
+                                    // Check if the property already exists in the object so we don't overwrite it
+                                    if (!((IDictionary<string, object>)actualObj).ContainsKey(property))
+                                    {
+                                        object actualPropertyVal = ConvertObject(propertyVal);
+                                        ((IDictionary<string, object>)actualObj)[property] = actualPropertyVal;
+                                    }
                                 }
                             }
                         }
+                    }
+                    catch (XmlException e)
+                    {
+                        throw new XmlException("XMl could not be loaded properly.", e);
                     }
                 }
 
