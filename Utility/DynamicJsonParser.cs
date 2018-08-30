@@ -22,7 +22,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
     using System.Management.Automation;
     using System.Reflection;
     using System.Xml;
-
+    using System.IO;
+    using Resources;
 
     /// <summary>
     /// Using PowerShell instance, parse valid JSON into a dynamic object.
@@ -161,44 +162,45 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
                     if (string.IsNullOrWhiteSpace(xmlString))
                     {
-                        throw new ArgumentNullException("xmlString");
+                         var message = string.Format(Messages.InvalidNuspec, "xmlString");
+                         throw new InvalidDataException(message);
                     }
 
-                    if (xmlString[0] != '<')
+                    // Remove any characters that may come before the xml tag
+                    // Characters may appear before the start of an xml tag if xml encoding is specified
+                    if ((xmlString[0] != '<') && xmlString.Contains('<'))
                     {
                         var strIndex = xmlString.IndexOf('<');
                         xmlString = xmlString.Substring(strIndex, xmlString.Length - 1);
                     }
-
-                    try
+                    else
                     {
-                        XmlDocument xmlDoc = new XmlDocument();
-                        xmlDoc.LoadXml(xmlString);
-                        XmlNodeList metadataNodeList = xmlDoc.GetElementsByTagName("metadata");
+                        var message = string.Format(Messages.InvalidNuspec, "xmlString");
+                        throw new InvalidDataException(message);
+                    }
 
-                        foreach (XmlNode node in metadataNodeList)
+                    XmlDocument xmlDoc = new XmlDocument();
+                    xmlDoc.LoadXml(xmlString);
+                    XmlNodeList metadataNodeList = xmlDoc.GetElementsByTagName("metadata");
+
+                    foreach (XmlNode node in metadataNodeList)
+                    {
+                        if (node.HasChildNodes)
                         {
-                            if (node.HasChildNodes)
+                            // Adding VSTS feed metadata values to the object containing nupkg property information
+                            for (int i = 0; i < node.ChildNodes.Count; i++)
                             {
-                                // Adding VSTS feed metadata values to the object containing nupkg property information
-                                for (int i = 0; i < node.ChildNodes.Count; i++)
-                                {
-                                    string property = node.ChildNodes[i].Name;
-                                    string propertyVal = node.ChildNodes[i].InnerText;
+                                string property = node.ChildNodes[i].Name;
+                                string propertyVal = node.ChildNodes[i].InnerText;
 
-                                    // Check if the property already exists in the object so we don't overwrite it
-                                    if (!((IDictionary<string, object>)actualObj).ContainsKey(property))
-                                    {
-                                        object actualPropertyVal = ConvertObject(propertyVal);
-                                        ((IDictionary<string, object>)actualObj)[property] = actualPropertyVal;
-                                    }
+                                // Check if the property already exists in the object so we don't overwrite it
+                                if (!((IDictionary<string, object>)actualObj).ContainsKey(property))
+                                {
+                                    object actualPropertyVal = ConvertObject(propertyVal);
+                                    ((IDictionary<string, object>)actualObj)[property] = actualPropertyVal;
                                 }
                             }
                         }
-                    }
-                    catch (XmlException e)
-                    {
-                        throw new XmlException("XMl could not be loaded properly.", e);
                     }
                 }
 

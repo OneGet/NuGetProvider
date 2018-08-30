@@ -358,6 +358,15 @@ namespace Microsoft.PackageManagement.NuGetProvider.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot find nuspec content..
+        /// </summary>
+        internal static string InvalidNuspec {
+            get {
+                return ResourceManager.GetString("InvalidNuspec", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to The package &apos;{0}&apos; does not have the .nuspec file..
         /// </summary>
         internal static string InvalidPackage {
