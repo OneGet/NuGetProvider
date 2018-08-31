@@ -218,7 +218,7 @@
     <value>The file extension '{0}' is not valid. The required file extension is '.nupkg'.</value>
   </data>
   <data name="InvalidNuspec" xml:space="preserve">
-    <value>Cannot find valid nuspec content.</value>
+    <value>Nuspec does not contain valid XML content.</value>
   </data>
   <data name="InvalidPackage" xml:space="preserve">
     <value>The package '{0}' does not have the .nuspec file.</value>

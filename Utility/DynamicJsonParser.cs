@@ -158,7 +158,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 //          </package>"
                 if (string.Equals(propertyName, "nuspec", StringComparison.OrdinalIgnoreCase))
                 {
-                    string xmlString = (string)psProperty.Value;
+                    string xmlString = psProperty.Value as string;
 
                     if (string.IsNullOrWhiteSpace(xmlString))
                     {
@@ -171,10 +171,11 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     if ((xmlString[0] != '<') && xmlString.Contains('<'))
                     {
                         var strIndex = xmlString.IndexOf('<');
-                        xmlString = xmlString.Substring(strIndex, xmlString.Length - 1);
+                        xmlString = xmlString.Substring(strIndex, xmlString.Length - strIndex);
                     }
                     else
                     {
+                        // The string does not contain valid xml
                         var message = string.Format(Messages.InvalidNuspec, "xmlString");
                         throw new InvalidDataException(message);
                     }
