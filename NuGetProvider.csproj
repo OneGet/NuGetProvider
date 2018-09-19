@@ -89,9 +89,12 @@
     <PackageReference Include="System.Linq.Parallel" Version="4.3.0" />
 	<PackageReference Include="Microsoft.PowerShell.PackageManagement.Core" Version="1.2.1-preview" />
   </ItemGroup>
-  
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="echo Embedding provider manifest '$(ProjectDir)'" />
-	  <Exec Command="$(ProjectDir)\tools\mt.exe -manifest $(ProjectDir)\provider.manifest -outputresource:&quot;$(TargetPath);#101&quot;" />
-  </Target>
+
+  <PostBuildEvent>:Locate MT.EXE Tool:
+set MTEXE=$(SolutionDir)..\tools\mt.exe
+
+:Run the tool to add the manifest to the binary.
+
+"%25MTEXE%25" -manifest $(ProjectDir)..\provider.manifest -outputresource:$(TargetPath);#101</PostBuildEvent>
+  </PropertyGroup>
 </Project>
