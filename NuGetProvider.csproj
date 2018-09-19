@@ -90,7 +90,8 @@
 	<PackageReference Include="Microsoft.PowerShell.PackageManagement.Core" Version="1.2.1-preview" />
   </ItemGroup>
 
-  <PostBuildEvent>:Locate MT.EXE Tool:
+  <PropertyGroup>
+    <PostBuildEvent>:Locate MT.EXE Tool:
 set MTEXE=$(SolutionDir)..\tools\mt.exe
 
 :Run the tool to add the manifest to the binary.
