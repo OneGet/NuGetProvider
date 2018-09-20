@@ -90,9 +90,4 @@
 	<PackageReference Include="Microsoft.PowerShell.PackageManagement.Core" Version="1.2.1-preview" />
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="echo Embedding provider manifest '$(ProjectDir)'" />
-	  <Exec Command="$(ProjectDir)\tools\mt -verbose -manifest $(ProjectDir)\provider.manifest -outputresource:&quot;$(TargetPath);#101&quot;" />
-  </Target>
-
 </Project>
