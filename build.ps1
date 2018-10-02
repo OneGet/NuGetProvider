@@ -1,10 +1,5 @@
 <# Build NuGetProvider to be used immediately by PackageManagement #>
 param(
-    # Example: C:\code\OneGet
-    [Parameter(Mandatory=$true)]
-    [string]
-    $OneGetRepositoryRoot,
-
     [Parameter(Mandatory=$false)]
     [string]
     [ValidateSet('net451', 'netcoreapp2.0', 'netstandard1.6', 'all')]
@@ -12,7 +7,11 @@ param(
 
     [Parameter(Mandatory=$false)]
     [string]
-    $Destination
+    $Destination,
+
+    [Parameter(Mandatory=$false)]
+    [string]
+    $Configuration = "Debug"
 )
 
 & "$PSScriptRoot\Generate-Resources.ps1"
@@ -24,12 +23,8 @@ if ($Framework -eq 'all') {
 }
 
 foreach ($f in $frameworks) {
-    $env:EMBEDPROVIDERMANIFEST = 'true'
-    $env:PROVIDERROOTDIR = Join-Path -Path $OneGetRepositoryRoot -ChildPath 'src' | 
-        Join-Path -ChildPath 'Microsoft.PackageManagement.NuGetProvider'
-    $env:MANIFESTROOTDIR = $PSScriptRoot
     dotnet restore
-    dotnet build --framework $f
+    dotnet build --framework $f --configuration $Configuration
     if ($Destination) {
         $copyDir = $Destination.Replace("{Root}", $OneGetRepositoryRoot)
         if ($f -eq 'net451') {

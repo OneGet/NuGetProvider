@@ -66,3 +66,8 @@ Network Trash Folder
 Temporary Items
 .apdisk
 35MSSharedLib1024.snk
+
+# NuGet packaging
+nuget.exe
+*.nupkg
+*.nuspec_template

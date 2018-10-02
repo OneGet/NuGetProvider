@@ -21,7 +21,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
     using System.Linq;
     using System.Management.Automation;
     using System.Reflection;
-
+    using System.Xml;
+    using System.IO;
+    using Resources;
 
     /// <summary>
     /// Using PowerShell instance, parse valid JSON into a dynamic object.
@@ -100,7 +102,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
             return result.ImmediateBaseObject as string;
         }
-        
+
         private static dynamic GetDynamic(PSObject obj, string numericalPrefix = "n", bool lowercaseProperties = true)
         {
             dynamic res = new ExpandoObject();
@@ -133,6 +135,74 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 if (lowercaseProperties)
                 {
                     propertyName = propertyName.ToLowerInvariant();
+                }
+
+                // Nuspec contains xml metadata as a string (only applicable to VSTS feeds)
+                // Example nuspec property:
+                // "nuspec":"<?xml version=\"1.0\" encoding=\"utf-8\"?>
+                //           <package xmlns=\"http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd\">
+                //                <metadata>
+                //                      <id>Microsoft.Kusto.Tools</id>
+                //                      <version>1.0.6</version>
+                //                      <title>Kusto Tools</title>
+                //                      <authors>Microsoft</authors>
+                //                      <owners>Microsoft</owners>
+                //                      <requireLicenseAcceptance>false</requireLicenseAcceptance>
+                //                      <licenseUrl>http://kusto.blob.core.windows.net/kusto-nuget/EULA-agreement.htm</licenseUrl>
+                //                      <projectUrl>http://aka.ms/kdocs</projectUrl>
+                //                      <iconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</iconUrl>
+                //                      <description>Kusto Tools</description>
+                //                      <releaseNotes>1.0.6: LightIngest refactored</releaseNotes>
+                //                      <copyright>Copyright ©  Microsoft Corporation</copyright>
+                //              </metadata>
+                //          </package>"
+                if (string.Equals(propertyName, "nuspec", StringComparison.OrdinalIgnoreCase))
+                {
+                    string xmlString = psProperty.Value as string;
+
+                    if (string.IsNullOrWhiteSpace(xmlString))
+                    {
+                         var message = string.Format(Messages.InvalidNuspec, "xmlString");
+                         throw new InvalidDataException(message);
+                    }
+
+                    // Remove any characters that may come before the xml tag
+                    // Characters may appear before the start of an xml tag if xml encoding is specified
+                    if ((xmlString[0] != '<') && xmlString.Contains('<'))
+                    {
+                        var strIndex = xmlString.IndexOf('<');
+                        xmlString = xmlString.Substring(strIndex, xmlString.Length - strIndex);
+                    }
+                    else
+                    {
+                        // The string does not contain valid xml
+                        var message = string.Format(Messages.InvalidNuspec, "xmlString");
+                        throw new InvalidDataException(message);
+                    }
+
+                    XmlDocument xmlDoc = new XmlDocument();
+                    xmlDoc.LoadXml(xmlString);
+                    XmlNodeList metadataNodeList = xmlDoc.GetElementsByTagName("metadata");
+
+                    foreach (XmlNode node in metadataNodeList)
+                    {
+                        if (node.HasChildNodes)
+                        {
+                            // Adding VSTS feed metadata values to the object containing nupkg property information
+                            for (int i = 0; i < node.ChildNodes.Count; i++)
+                            {
+                                string property = node.ChildNodes[i].Name;
+                                string propertyVal = node.ChildNodes[i].InnerText;
+
+                                // Check if the property already exists in the object so we don't overwrite it
+                                if (!((IDictionary<string, object>)actualObj).ContainsKey(property))
+                                {
+                                    object actualPropertyVal = ConvertObject(propertyVal);
+                                    ((IDictionary<string, object>)actualObj)[property] = actualPropertyVal;
+                                }
+                            }
+                        }
+                    }
                 }
 
                 object actualVal = ConvertObject(psProperty.Value);
