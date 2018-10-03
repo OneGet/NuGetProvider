@@ -7,7 +7,7 @@ clone_folder: c:\projects\NuGetTest\NuGetProvider
 
 # Install Pester
 init: 
-    - cinst -y pester -v -d
+    - cinst -y pester --force
 
 install:
 
