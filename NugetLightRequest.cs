@@ -1162,14 +1162,14 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <param name="request"></param>
         /// <returns></returns>
         internal IEnumerable<PackageItem> GetPackageById(string name, NuGetRequest request, string requiredVersion = null,
-            string minimumVersion = null, string maximumVersion = null, bool minInclusive = true, bool maxInclusive = true)
+            string minimumVersion = null, string maximumVersion = null, bool minInclusive = true, bool maxInclusive = true, bool isDependency = false)
         {
             if (String.IsNullOrWhiteSpace(name))
             {
                 return Enumerable.Empty<PackageItem>();
             }
 
-            return SelectedSources.AsParallel().WithMergeOptions(ParallelMergeOptions.NotBuffered).SelectMany(source => GetPackageById(source, name, request, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive));
+            return SelectedSources.AsParallel().WithMergeOptions(ParallelMergeOptions.NotBuffered).SelectMany(source => GetPackageById(source, name, request, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive, isDependency));
         }
 
         /// <summary>
@@ -1529,7 +1529,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
             string minimumVersion = null,
             string maximumVersion = null,
             bool minInclusive = true,
-            bool maxInclusive = true)
+            bool maxInclusive = true,
+            bool isDependency = false)
         {
             try
             {
@@ -1561,9 +1562,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         && (new SemanticVersion(minimumVersion) == new SemanticVersion(maximumVersion))
                         && minInclusive && maxInclusive);
 
-                // if required version not specified then don't use unlisted version
+                // if required version not specified and if the package is not a dependency, then don't use unlisted version
                 // unlisted version is the one that has published year as 1900
-                if (!exactVersionRequired)
+                if (!exactVersionRequired && !isDependency)
                 {
                     pkgs = pkgs.Where(pkg => (!pkg.Published.HasValue || pkg.Published.Value.Year > 1900));
                 }
