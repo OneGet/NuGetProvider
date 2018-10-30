@@ -1162,14 +1162,14 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <param name="request"></param>
         /// <returns></returns>
         internal IEnumerable<PackageItem> GetPackageById(string name, NuGetRequest request, string requiredVersion = null,
-            string minimumVersion = null, string maximumVersion = null, bool minInclusive = true, bool maxInclusive = true, bool isDependency = false)
+            string minimumVersion = null, string maximumVersion = null, bool minInclusive = true, bool maxInclusive = true)
         {
             if (String.IsNullOrWhiteSpace(name))
             {
                 return Enumerable.Empty<PackageItem>();
             }
 
-            return SelectedSources.AsParallel().WithMergeOptions(ParallelMergeOptions.NotBuffered).SelectMany(source => GetPackageById(source, name, request, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive, isDependency));
+            return SelectedSources.AsParallel().WithMergeOptions(ParallelMergeOptions.NotBuffered).SelectMany(source => GetPackageById(source, name, request, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive));
         }
 
         /// <summary>
@@ -1529,8 +1529,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             string minimumVersion = null,
             string maximumVersion = null,
             bool minInclusive = true,
-            bool maxInclusive = true,
-            bool isDependency = false)
+            bool maxInclusive = true)
         {
             try
             {
