@@ -1562,9 +1562,13 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         && (new SemanticVersion(minimumVersion) == new SemanticVersion(maximumVersion))
                         && minInclusive && maxInclusive);
 
-                // if required version not specified and if the package is not a dependency, then don't use unlisted version
+                // find out if all versions of a package are unlisted
+                // if a version is marked as the latest version, it's listed
+                var allVersionsUnlisted = ((pkgs.Where(p => p.IsAbsoluteLatestVersion || p.IsLatestVersion)).IsNullOrEmpty()) ? true : false;
+
+                // if required version not specified, and there is at least one version that is listed, then don't use unlisted version
                 // unlisted version is the one that has published year as 1900
-                if (!exactVersionRequired && !isDependency)
+                if (!exactVersionRequired && !allVersionsUnlisted)
                 {
                     pkgs = pkgs.Where(pkg => (!pkg.Published.HasValue || pkg.Published.Value.Year > 1900));
                 }
