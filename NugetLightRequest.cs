@@ -1162,14 +1162,14 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <param name="request"></param>
         /// <returns></returns>
         internal IEnumerable<PackageItem> GetPackageById(string name, NuGetRequest request, string requiredVersion = null,
-            string minimumVersion = null, string maximumVersion = null, bool minInclusive = true, bool maxInclusive = true)
+            string minimumVersion = null, string maximumVersion = null, bool minInclusive = true, bool maxInclusive = true, bool isDependency = false)
         {
             if (String.IsNullOrWhiteSpace(name))
             {
                 return Enumerable.Empty<PackageItem>();
             }
 
-            return SelectedSources.AsParallel().WithMergeOptions(ParallelMergeOptions.NotBuffered).SelectMany(source => GetPackageById(source, name, request, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive));
+            return SelectedSources.AsParallel().WithMergeOptions(ParallelMergeOptions.NotBuffered).SelectMany(source => GetPackageById(source, name, request, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive, isDependency));
         }
 
         /// <summary>
@@ -1529,7 +1529,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
             string minimumVersion = null,
             string maximumVersion = null,
             bool minInclusive = true,
-            bool maxInclusive = true)
+            bool maxInclusive = true,
+            bool isDependency = false)
         {
             try
             {
@@ -1562,14 +1563,23 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         && minInclusive && maxInclusive);
 
                 // find out if all versions of a package are unlisted
-                // if a version is marked as the latest version, it's listed
-                var allVersionsUnlisted = ((pkgs.Where(p => p.IsAbsoluteLatestVersion || p.IsLatestVersion)).IsNullOrEmpty()) ? true : false;
+                // unlisted versions will have a published year as 1900 or earlier
+                var listedPkgs = pkgs.Where(p => (!p.Published.HasValue || p.Published.Value.Year > 1900));
+                var allVersionsUnlisted= (listedPkgs.IsNullOrEmpty()) ? true : false;
 
-                // if required version not specified, and there is at least one version that is listed, then don't use unlisted version
-                // unlisted version is the one that has published year as 1900
-                if (!exactVersionRequired && !allVersionsUnlisted)
+                if (!exactVersionRequired)
                 {
-                    pkgs = pkgs.Where(pkg => (!pkg.Published.HasValue || pkg.Published.Value.Year > 1900));
+                    // if at least one version is listed, return the set of listed packages.
+                    // if all verisons are unlisted and package is not a dependency, don't return any packages
+                    // if all versions are unlisted and it is a dependency, just return all the packages
+                    if (!allVersionsUnlisted)
+                    {
+                        pkgs = listedPkgs;
+                    }
+                    else if (allVersionsUnlisted && !isDependency)
+                    {
+                        pkgs = null;
+                    }
                 }
 
                 if (AllVersions.Value)
@@ -1591,7 +1601,13 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     }
                     else
                     {
-                        pkgs = from p in pkgs where p.IsLatestVersion select p;
+                        SemanticVersion latest = new SemanticVersion("0.0.0");
+                        foreach (var p in pkgs) {
+                            if (p.Version > latest) {
+                                latest = p.Version;
+                            }
+                        }
+                        pkgs = from p in pkgs where p.Version == latest select p;
                     }
                 }
                 else if (!exactVersionRequired && !AllowPrereleaseVersions.Value)
