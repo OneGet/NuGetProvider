@@ -366,39 +366,36 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
             NormalizeVersion(request, ref requiredVersion, ref minimumVersion, ref maximumVersion);
 
-            try {
-
-            
-            // If there are any packages, yield and return
-            if (request.YieldPackages(request.GetPackageById(name, request, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive), name))
+            try
             {
-                return;
-            }
+                // If there are any packages, yield and return
+                if (request.YieldPackages(request.GetPackageById(name, request, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive), name))
+                {
+                    return;
+                }
 
-            // Check if the name contains wildcards. If not, return. This matches the behavior as "Get-module xje" 
-            if (!String.IsNullOrWhiteSpace(name) && !WildcardPattern.ContainsWildcardCharacters(name))
-            {              
-                return;
-            }
+                // Check if the name contains wildcards. If not, return. This matches the behavior as "Get-module xje" 
+                if (!String.IsNullOrWhiteSpace(name) && !WildcardPattern.ContainsWildcardCharacters(name))
+                {              
+                    return;
+                }
 
-            // In the case of the package name is null or contains wildcards, error out if a user puts version info
-            if (!String.IsNullOrWhiteSpace(requiredVersion) || !String.IsNullOrWhiteSpace(minimumVersion) || !String.IsNullOrWhiteSpace(maximumVersion))
-            {
-                request.Warning( Constants.Messages.MissingRequiredParameter, "name");
-                return;
-            }
-            
-            
-       
-            // Have we been cancelled?
-            if (request.IsCanceled) {
-                request.Debug(Resources.Messages.RequestCanceled, PackageProviderName, "FindPackage");
+                // In the case of the package name is null or contains wildcards, error out if a user puts version info
+                if (!String.IsNullOrWhiteSpace(requiredVersion) || !String.IsNullOrWhiteSpace(minimumVersion) || !String.IsNullOrWhiteSpace(maximumVersion))
+                {
+                    request.Warning( Constants.Messages.MissingRequiredParameter, "name");
+                    return;
+                }
 
-                return;
-            }
+                // Have we been cancelled?
+                if (request.IsCanceled) {
+                    request.Debug(Resources.Messages.RequestCanceled, PackageProviderName, "FindPackage");
 
-            // A user does not provide the package full Name at all Or used wildcard in the name. Let's try searching the entire repository for matches.
-            request.YieldPackages(request.SearchForPackages(name), name);
+                    return;
+                }
+
+                // A user does not provide the package full Name at all Or used wildcard in the name. Let's try searching the entire repository for matches.
+                request.YieldPackages(request.SearchForPackages(name), name);
             }
             catch (Exception ex)
             {
@@ -552,7 +549,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
 
             NormalizeVersion(request, ref requiredVersion, ref minimumVersion, ref maximumVersion);
-
+            
             request.GetInstalledPackages(name, requiredVersion, minimumVersion, maximumVersion);
         }
 
@@ -581,6 +578,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 if(new SemanticVersion(minimumVersion) > new SemanticVersion(maximumVersion))
                 {
                     request.Warning("Specified version range is invalid. minimumVersion = {0} maximumVersion ={1}", minimumVersion, maximumVersion);
+                    throw new InvalidFilterCriteriaException();
                 }
             }
         }
