@@ -959,7 +959,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     }
 
                     // get all the packages that match this dependency
-                    var dependentPackageItem = request.GetPackageById(dep.Id, request, minimumVersion: minVersion, maximumVersion: maxVersion, minInclusive: dep.DependencyVersion.IsMinInclusive, maxInclusive: dep.DependencyVersion.IsMaxInclusive).ToArray();
+                    var dependentPackageItem = request.GetPackageById(dep.Id, request, minimumVersion: minVersion, maximumVersion: maxVersion, minInclusive: dep.DependencyVersion.IsMinInclusive, maxInclusive: dep.DependencyVersion.IsMaxInclusive, isDependency: true).ToArray();
 
                     if (dependentPackageItem.Length == 0)
                     {
