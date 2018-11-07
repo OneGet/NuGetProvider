@@ -169,19 +169,16 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     // temp
                     // Remove any characters that may come before the xml tag
                     // Characters may appear before the start of an xml tag if xml encoding is specified
-                    if (xmlString[0] != '<')
+                    if ((xmlString[0] != '<') && (xmlString.Contains('<'))
                     {
-                        if (xmlString.Contains('<'))
-                        {
-                            var strIndex = xmlString.IndexOf('<');
-                            xmlString = xmlString.Substring(strIndex, xmlString.Length - strIndex);
-                        }
-                        else
-                        {
-                            // The string does not contain valid xml
-                            var message = string.Format(Messages.InvalidNuspec, "xmlString");
-                            throw new InvalidDataException(message);
-                        }
+                        var strIndex = xmlString.IndexOf('<');
+                        xmlString = xmlString.Substring(strIndex, xmlString.Length - strIndex);
+                    }
+                    else
+                    {
+                        // The string does not contain valid xml
+                        var message = string.Format(Messages.InvalidNuspec, "xmlString");
+                        throw new InvalidDataException(message);
                     }
 
                     XmlDocument xmlDoc = new XmlDocument();
