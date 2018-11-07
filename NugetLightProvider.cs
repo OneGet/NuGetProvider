@@ -581,7 +581,6 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 if(new SemanticVersion(minimumVersion) > new SemanticVersion(maximumVersion))
                 {
                     request.Warning("Specified version range is invalid. minimumVersion = {0} maximumVersion ={1}", minimumVersion, maximumVersion);
-                    throw new InvalidFilterCriteriaException();
                 }
             }
         }
