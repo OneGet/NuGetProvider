@@ -387,8 +387,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 request.Warning( Constants.Messages.MissingRequiredParameter, "name");
                 return;
             }
-
             
+
        
             // Have we been cancelled?
             if (request.IsCanceled) {
@@ -552,7 +552,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
 
             NormalizeVersion(request, ref requiredVersion, ref minimumVersion, ref maximumVersion);
-            
+
             request.GetInstalledPackages(name, requiredVersion, minimumVersion, maximumVersion);
         }
 
@@ -619,4 +619,4 @@ namespace Microsoft.PackageManagement.NuGetProvider
             return retval;
         }
     }
-}
+} 
