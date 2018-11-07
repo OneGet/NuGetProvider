@@ -388,7 +388,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 return;
             }
             
-
+            
        
             // Have we been cancelled?
             if (request.IsCanceled) {
