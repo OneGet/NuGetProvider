@@ -619,4 +619,4 @@ namespace Microsoft.PackageManagement.NuGetProvider
             return retval;
         }
     }
-} 
+}
