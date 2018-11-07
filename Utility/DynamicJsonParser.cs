@@ -166,6 +166,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                          throw new InvalidDataException(message);
                     }
 
+                    // temp
                     // Remove any characters that may come before the xml tag
                     // Characters may appear before the start of an xml tag if xml encoding is specified
                     if ((xmlString[0] != '<') && xmlString.Contains('<'))
