@@ -98,7 +98,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 long res = -1;
                 if (root.HasProperty("totalhits"))
                 {
-                    res = Convert.ToInt64(root.totalhits);
+                    res = root.totalhits;
                     request.Debug(Resources.Messages.TotalPackagesDiscovered, res);
                 }
                 else
