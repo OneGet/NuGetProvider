@@ -1154,6 +1154,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// Get the package based on given package id
         /// </summary>
         /// <param name="name">Package id or name</param>
+        /// <param name="isDependency">Whether the package is a dependency</param>
         /// <param name="requiredVersion"></param>
         /// <param name="minimumVersion"></param>
         /// <param name="maximumVersion"></param>
