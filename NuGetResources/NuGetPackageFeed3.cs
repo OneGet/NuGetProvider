@@ -235,7 +235,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 if (context.RequiredVersion == null && context.MinimumVersion == null && context.MaximumVersion == null && packages != null)
                 {
                     // If all versions of a package are unlisted and a version flag is not specified, do not return any packages
-                    var allVersionsUnlisted = ((packages.Where(p => (!p.Published.HasValue || p.Published.Value.Year > 1900))).IsNullOrEmpty()) ? true : false;
+                    var allVersionsUnlisted = (packages.Where(p => (!p.Published.HasValue || p.Published.Value.Year > 1900))).IsNullOrEmpty();
                     if (allVersionsUnlisted)
                     {
                         packages = null;
