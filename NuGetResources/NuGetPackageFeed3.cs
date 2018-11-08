@@ -422,7 +422,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 return findContext.MakeResult(new List<IPackage>());
             }
 
-            NuGetSearchResult result = findContext.MakeResult(FindImpl(findContext, request), versionPostFilterRequired: false);
+            NuGetSearchResult result = findContext.MakeResult(FindImpl(findContext, request), versionPostFilterRequired: true);
             request.Debug(Messages.DebugInfoReturnCall, "NuGetPackageFeed3", "Find");
             return result;
         }

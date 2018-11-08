@@ -1566,7 +1566,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 // find out if all versions of a package are unlisted
                 // unlisted versions will have a published year as 1900 or earlier
                 var listedPkgs = pkgs.Where(p => (!p.Published.HasValue || p.Published.Value.Year > 1900));
-                var allVersionsUnlisted= (listedPkgs.IsNullOrEmpty()) ? true : false;
+                var allVersionsUnlisted= listedPkgs.IsNullOrEmpty();
 
                 if (!exactVersionRequired)
                 {
@@ -1580,16 +1580,6 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     else if (allVersionsUnlisted && !isDependency)
                     {
                         pkgs = null;
-                    }
-
-                    if (minimumVersion != null && !minInclusive)
-                    {
-                        pkgs = pkgs.Where(p => (p.Version != (new SemanticVersion(minimumVersion))));
-                    }
-
-                    if (maximumVersion != null && !maxInclusive)
-                    {
-                        pkgs = pkgs.Where(p => (p.Version != (new SemanticVersion(maximumVersion))));
                     }
                 }
 
@@ -1618,6 +1608,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                                 latestPkg = p;
                             }
                         }
+                        pkgs = (System.Collections.Generic.IEnumerable <Microsoft.PackageManagement.NuGetProvider.IPackage>)latestPkg;
                     }
                 }
                 else if (!exactVersionRequired && !AllowPrereleaseVersions.Value)
