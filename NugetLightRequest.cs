@@ -1582,12 +1582,12 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         pkgs = null;
                     }
 
-                    if (!minInclusive)
+                    if (minimumVersion != null && !minInclusive)
                     {
                         pkgs = pkgs.Where(p => (p.Version != (new SemanticVersion(minimumVersion))));
                     }
 
-                    if (!maxInclusive)
+                    if (maximumVersion != null && !maxInclusive)
                     {
                         pkgs = pkgs.Where(p => (p.Version != (new SemanticVersion(maximumVersion))));
                     }
