@@ -1581,6 +1581,16 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     {
                         pkgs = null;
                     }
+
+                    if (!minInclusive)
+                    {
+                        pkgs = pkgs.Where(p => (p.Version != (new SemanticVersion(minimumVersion))));
+                    }
+
+                    if (!maxInclusive)
+                    {
+                        pkgs = pkgs.Where(p => (p.Version != (new SemanticVersion(maximumVersion))));
+                    }
                 }
 
                 if (AllVersions.Value)
