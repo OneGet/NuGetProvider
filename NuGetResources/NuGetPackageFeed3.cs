@@ -102,7 +102,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         // If we wanted, we could enable this by checking if !isRegistrationType && context.EnableDeepMetadataBypass, then call into Find with the registration index URL
                         if (!context.AllVersions && packageSemanticVersions != null && !context.EnableDeepMetadataBypass)
                         {
-                            foreach (SemanticVersion packageVersion in packageSemanticVersions)
+                            foreach (SemanticVersion packageVersion in context.PackageInfo.AllVersions)
                             {
                                 NuGetSearchResult result = this.ResourcesCollection.PackagesFeed.Find(new NuGetSearchContext()
                                 {
@@ -234,16 +234,25 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
                 if (context.RequiredVersion == null && context.MinimumVersion == null && context.MaximumVersion == null && packages != null)
                 {
-                    PackageBase absoluteLatestPackage = packages.Where(p => p.IsPrerelease).OrderByDescending(pb => ((IPackage)pb).Version).FirstOrDefault();
-                    if (absoluteLatestPackage != null)
+                    // If all versions of a package are unlisted and a version flag is not specified, do not return any packages
+                    var allVersionsUnlisted = (packages.Where(p => (!p.Published.HasValue || p.Published.Value.Year > 1900))).IsNullOrEmpty();
+                    if (allVersionsUnlisted)
                     {
-                        absoluteLatestPackage.IsAbsoluteLatestVersion = true;
+                        packages = null;
                     }
-
-                    PackageBase latestPackage = packages.Where(p => !p.IsPrerelease).OrderByDescending(pb => ((IPackage)pb).Version).FirstOrDefault();
-                    if (latestPackage != null)
+                    else
                     {
-                        latestPackage.IsLatestVersion = true;
+                        PackageBase absoluteLatestPackage = packages.Where(p => p.IsPrerelease).OrderByDescending(pb => ((IPackage)pb).Version).FirstOrDefault();
+                        if (absoluteLatestPackage != null)
+                        {
+                            absoluteLatestPackage.IsAbsoluteLatestVersion = true;
+                        }
+
+                        PackageBase latestPackage = packages.Where(p => !p.IsPrerelease).OrderByDescending(pb => ((IPackage)pb).Version).FirstOrDefault();
+                        if (latestPackage != null)
+                        {
+                            latestPackage.IsLatestVersion = true;
+                        }
                     }
                 }
             }
@@ -413,7 +422,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 return findContext.MakeResult(new List<IPackage>());
             }
 
-            NuGetSearchResult result = findContext.MakeResult(FindImpl(findContext, request), versionPostFilterRequired: false);
+            NuGetSearchResult result = findContext.MakeResult(FindImpl(findContext, request), versionPostFilterRequired: true);
             request.Debug(Messages.DebugInfoReturnCall, "NuGetPackageFeed3", "Find");
             return result;
         }
