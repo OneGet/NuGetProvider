@@ -42,11 +42,6 @@ namespace Microsoft.PackageManagement.NuGetProvider
             DateTime dtResult;
             Uri uriResult;
 
-            if (jsonObject.HasProperty("listed") && !((bool)jsonObject.listed))
-            {
-                return null;
-            }
-
             if (jsonObject.HasProperty("id"))
             {
                 pb.Id = jsonObject.id;
