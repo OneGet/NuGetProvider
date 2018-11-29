@@ -1602,7 +1602,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     }
                     else
                     {
-                        pkgs = from p in pkgs where (p.IsLatestVersion && string.IsNullOrWhiteSpace(p.Version.SpecialVersion)) select p;
+                        pkgs = from p in pkgs where (p.IsLatestVersion) select p;
                     }
                 }
                 else if (!exactVersionRequired && !AllowPrereleaseVersions.Value)
