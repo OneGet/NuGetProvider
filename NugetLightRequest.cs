@@ -1602,13 +1602,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     }
                     else
                     {
-                        SemanticVersion latest = new SemanticVersion("0.0.0");
-                        foreach (var p in pkgs) { 
-                            if (p.Version > latest) { 
-                                latest = p.Version;
-                            }
-                        }
-                        pkgs = from p in pkgs where p.Version == latest select p; 
+                        pkgs = from p in pkgs where (p.IsLatestVersion) select p;
                     }
                 }
                 else if (!exactVersionRequired && !AllowPrereleaseVersions.Value)
