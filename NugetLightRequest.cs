@@ -1602,14 +1602,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     }
                     else
                     {
-                        SemanticVersion latest = new SemanticVersion("0.0.0");
-                        foreach (var p in pkgs) {
-                            // p.Version.SpecialVersion is the prerelease string after the patch number ex: for "1.0.0-alpha1" it would be "alpha1"
-                            if (p.Version > latest && String.IsNullOrWhiteSpace(p.Version.SpecialVersion) && !p.IsPrerelease) {
-                                latest = p.Version;
-                            }
-                        }
-                        pkgs = from p in pkgs where p.Version == latest select p;
+                        pkgs = from p in pkgs
+                               group p by p.Id
+                            into newGroup
+                               select newGroup.Aggregate((current, next) => (next.Version > current.Version && String.IsNullOrWhiteSpace(next.Version.SpecialVersion) && !next.IsPrerelease) ? next : current);
                     }
                 }
                 else if (!exactVersionRequired && !AllowPrereleaseVersions.Value)
