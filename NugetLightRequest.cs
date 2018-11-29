@@ -1602,10 +1602,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     }
                     else
                     {
-                        pkgs = from p in pkgs
-                               group p by p.Id
-                            into newGroup
-                               select newGroup.Aggregate((current, next) => (next.Version > current.Version && String.IsNullOrWhiteSpace(next.Version.SpecialVersion) && !next.IsPrerelease) ? next : current);
+                        pkgs = from p in pkgs where (p.IsLatestVersion && string.IsNullOrWhiteSpace(p.Version.SpecialVersion)) select p;
                     }
                 }
                 else if (!exactVersionRequired && !AllowPrereleaseVersions.Value)
