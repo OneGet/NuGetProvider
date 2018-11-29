@@ -1603,12 +1603,13 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     else
                     {
                         SemanticVersion latest = new SemanticVersion("0.0.0");
-                        foreach (var p in pkgs) { 
-                            if (p.Version > latest) { 
+                        foreach (var p in pkgs) {
+                            // p.Version.SpecialVersion is the prerelease string after the patch number ex: for "1.0.0-alpha1" it would be "alpha1"
+                            if (p.Version > latest && String.IsNullOrWhiteSpace(p.Version.SpecialVersion) && !p.IsPrerelease) {
                                 latest = p.Version;
                             }
                         }
-                        pkgs = from p in pkgs where p.Version == latest select p; 
+                        pkgs = from p in pkgs where p.Version == latest select p;
                     }
                 }
                 else if (!exactVersionRequired && !AllowPrereleaseVersions.Value)
