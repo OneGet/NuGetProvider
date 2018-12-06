@@ -14,11 +14,12 @@ install:
 - reg ADD "HKLM\Software\Wow6432Node\Microsoft\StrongName\Verification\Microsoft.PackageManagement.NuGetProvider,31bf3856ad364e35"  /f
 
 before_build:
-  - ps: .\Generate-Resources.ps1
-  - ps: $null = Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile nuget.exe
-  - ps: pushd .\vs-csproj
-  - ps: '& .\nuget.exe restore -PackagesDirectory (Join-Path $pwd vs-csproj\packages)'
-  - ps: popd
+  - ps: |
+        .\Generate-Resources.ps1
+        Push-Location .\vs-csproj
+        $null = Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile nuget.exe
+        & .\nuget.exe restore -PackagesDirectory (Join-Path $pwd packages)'
+        Pop-Location
 build_script:
   - msbuild "vs-csproj\NugetLightProvider.csproj" /verbosity:normal
 after_build:
