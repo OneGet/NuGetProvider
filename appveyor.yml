@@ -17,7 +17,7 @@ before_build:
   - ps: .\Generate-Resources.ps1
   - ps: $null = Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile nuget.exe
   - ps: pushd .\vs-csproj
-  - ps: & .\nuget.exe restore -PackagesDirectory (Join-Path $pwd vs-csproj\packages)
+  - ps: '& .\nuget.exe restore -PackagesDirectory (Join-Path $pwd vs-csproj\packages)'
   - ps: popd
 build_script:
   - msbuild "vs-csproj\NugetLightProvider.csproj" /verbosity:normal
