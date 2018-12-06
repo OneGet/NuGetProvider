@@ -2,7 +2,7 @@
 param(
     [Parameter(Mandatory=$false)]
     [string]
-    [ValidateSet('net451', 'netcoreapp2.0', 'netstandard2.0', 'all')]
+    [ValidateSet('net451', 'netstandard2.0', 'all')]
     $Framework = 'net451',
 
     [Parameter(Mandatory=$false)]
@@ -17,7 +17,7 @@ param(
 & "$PSScriptRoot\Generate-Resources.ps1"
 
 if ($Framework -eq 'all') {
-    $frameworks = @('net451','netcoreapp2.0','netstandard2.0')
+    $frameworks = @('net451', 'netstandard2.0')
 } else {
     $frameworks = @($Framework)
 }
