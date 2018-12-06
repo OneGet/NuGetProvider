@@ -21,6 +21,7 @@ before_build:
         Pop-Location
 build_script:
   - msbuild "vs-csproj\NugetLightProvider.csproj" /verbosity:normal
+  - ps: .\build.ps1 -Framework all -Configuration Release -Destination temp # Binaries are not used, just to verify compilation is not broken
 after_build:
 - ps: |
     Get-ChildItem "C:\output\release\bin" -Recurse | ForEach-Object { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName releasebits -Type Auto }
