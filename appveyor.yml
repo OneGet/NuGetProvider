@@ -17,8 +17,8 @@ before_build:
   - ps: |
         .\Generate-Resources.ps1
         Push-Location .\vs-csproj
-        $null = Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile nuget.exe
-        & .\nuget.exe restore -PackagesDirectory (Join-Path $pwd packages)
+        # $null = Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile nuget.exe
+        nuget restore -PackagesDirectory (Join-Path $pwd packages)
         Pop-Location
 build_script:
   - msbuild "vs-csproj\NugetLightProvider.csproj" /verbosity:normal
