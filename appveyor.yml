@@ -17,18 +17,17 @@ before_build:
   - ps: |
         .\Generate-Resources.ps1
         Push-Location .\vs-csproj
-        # $null = Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile nuget.exe
         nuget restore -PackagesDirectory (Join-Path $pwd packages)
         Pop-Location
 build_script:
   - msbuild "vs-csproj\NugetLightProvider.csproj" /verbosity:normal
 after_build:
-- ps: >-
+- ps: |
     Get-ChildItem "C:\output\release\bin" -Recurse | ForEach-Object { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName releasebits -Type Auto }
 
 before_test:
-- ps: >-   
+- ps: |
     # Import the Nuget provider just built
-    Import-PackageProvider C:\output\release\bin\Microsoft.PackageManagement.NuGetProvider.dll -force -verbose
+    Import-PackageProvider C:\output\release\bin\Microsoft.PackageManagement.NuGetProvider.dll -Force -Verbose
    
     & .\smoketest.tests.ps1
