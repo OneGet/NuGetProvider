@@ -2,7 +2,6 @@ version: 1.0.{build}
 image: Visual Studio 2017
 configuration: Release
 platform: Any CPU
-clone_folder: c:\projects\NuGetTest\NuGetProvider
 
 # Install Pester
 init: 
@@ -15,23 +14,20 @@ install:
 - reg ADD "HKLM\Software\Wow6432Node\Microsoft\StrongName\Verification\Microsoft.PackageManagement.NuGetProvider,31bf3856ad364e35"  /f
 
 before_build:
-  - ps: pushd c:\projects\NuGetTest\NuGetProvider
-  - ps: c:\projects\NuGetTest\NuGetProvider\Generate-Resources.ps1
-  - ps: $null = Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile c:\projects\NuGetTest\NuGetProvider\nuget.exe
-  - ps: pushd c:\projects\NuGetTest\NuGetProvider\vs-csproj
-  - ps: c:\projects\NuGetTest\NuGetProvider\nuget.exe restore -PackagesDirectory c:\projects\NuGetTest\NuGetProvider\vs-csproj\packages
-  - ps: popd
+  - ps: .\Generate-Resources.ps1
+  - ps: $null = Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile nuget.exe
+  - ps: pushd .\vs-csproj
+  - ps: & .\nuget.exe restore -PackagesDirectory (Join-Path $pwd vs-csproj\packages)
   - ps: popd
 build_script:
-  - msbuild "c:\projects\NuGetTest\NuGetProvider\vs-csproj\NugetLightProvider.csproj" /verbosity:normal
+  - msbuild "vs-csproj\NugetLightProvider.csproj" /verbosity:normal
 after_build:
 - ps: >-
-    Get-ChildItem "C:\output\release\bin" -Recurse | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName releasebits -Type Auto }
+    Get-ChildItem "C:\output\release\bin" -Recurse | ForEach-Object { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName releasebits -Type Auto }
 
 before_test:
 - ps: >-   
     # Import the Nuget provider just built
     Import-PackageProvider C:\output\release\bin\Microsoft.PackageManagement.NuGetProvider.dll -force -verbose
-    
    
-    & "c:\projects\NuGetTest\NuGetProvider\smoketest.tests.ps1"
+    & .\NuGetProvider\smoketest.tests.ps1
