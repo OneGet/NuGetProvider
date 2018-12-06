@@ -31,4 +31,4 @@ before_test:
     # Import the Nuget provider just built
     Import-PackageProvider C:\output\release\bin\Microsoft.PackageManagement.NuGetProvider.dll -force -verbose
    
-    & .\NuGetProvider\smoketest.tests.ps1
+    & .\smoketest.tests.ps1
