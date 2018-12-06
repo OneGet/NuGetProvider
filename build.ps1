@@ -23,7 +23,6 @@ if ($Framework -eq 'all') {
 }
 
 foreach ($f in $frameworks) {
-    dotnet restore
     dotnet build --framework $f --configuration $Configuration
     if ($Destination) {
         $copyDir = $Destination.Replace("{Root}", $OneGetRepositoryRoot)
