@@ -23,11 +23,11 @@ before_build:
 build_script:
   - msbuild "vs-csproj\NugetLightProvider.csproj" /verbosity:normal
 after_build:
-- ps: >-
+- ps: |
     Get-ChildItem "C:\output\release\bin" -Recurse | ForEach-Object { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName releasebits -Type Auto }
 
 before_test:
-- ps: >-   
+- ps: |
     # Import the Nuget provider just built
     Import-PackageProvider C:\output\release\bin\Microsoft.PackageManagement.NuGetProvider.dll -force -verbose
    
