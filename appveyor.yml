@@ -1,6 +1,5 @@
 version: 1.0.{build}
-os:
-- WMF 5
+image: Visual Studio 2017
 configuration: Release
 platform: Any CPU
 clone_folder: c:\projects\NuGetTest\NuGetProvider
