@@ -1,9 +1,7 @@
 version: 1.0.{build}
-os:
-- WMF 5
+image: Visual Studio 2017
 configuration: Release
 platform: Any CPU
-clone_folder: c:\projects\NuGetTest\NuGetProvider
 
 # Install Pester
 init: 
@@ -16,23 +14,21 @@ install:
 - reg ADD "HKLM\Software\Wow6432Node\Microsoft\StrongName\Verification\Microsoft.PackageManagement.NuGetProvider,31bf3856ad364e35"  /f
 
 before_build:
-  - ps: pushd c:\projects\NuGetTest\NuGetProvider
-  - ps: c:\projects\NuGetTest\NuGetProvider\Generate-Resources.ps1
-  - ps: $null = Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile c:\projects\NuGetTest\NuGetProvider\nuget.exe
-  - ps: pushd c:\projects\NuGetTest\NuGetProvider\vs-csproj
-  - ps: c:\projects\NuGetTest\NuGetProvider\nuget.exe restore -PackagesDirectory c:\projects\NuGetTest\NuGetProvider\vs-csproj\packages
-  - ps: popd
-  - ps: popd
+  - ps: |
+        .\Generate-Resources.ps1
+        Push-Location .\vs-csproj
+        nuget restore -PackagesDirectory (Join-Path $pwd packages)
+        Pop-Location
 build_script:
-  - msbuild "c:\projects\NuGetTest\NuGetProvider\vs-csproj\NugetLightProvider.csproj" /verbosity:normal
+  - msbuild "vs-csproj\NugetLightProvider.csproj" /verbosity:normal
+  - ps: .\build.ps1 -Framework all -Configuration Release -Destination temp # Binaries are not used, just to verify compilation is not broken
 after_build:
-- ps: >-
-    Get-ChildItem "C:\output\release\bin" -Recurse | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName releasebits -Type Auto }
+- ps: |
+    Get-ChildItem "C:\output\release\bin" -Recurse | ForEach-Object { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName releasebits -Type Auto }
 
 before_test:
-- ps: >-   
+- ps: |
     # Import the Nuget provider just built
-    Import-PackageProvider C:\output\release\bin\Microsoft.PackageManagement.NuGetProvider.dll -force -verbose
-    
+    Import-PackageProvider C:\output\release\bin\Microsoft.PackageManagement.NuGetProvider.dll -Force -Verbose
    
-    & "c:\projects\NuGetTest\NuGetProvider\smoketest.tests.ps1"
+    & .\smoketest.tests.ps1
