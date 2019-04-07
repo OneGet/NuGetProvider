@@ -71,3 +71,4 @@ Temporary Items
 nuget.exe
 *.nupkg
 *.nuspec_template
+/.vs/*
