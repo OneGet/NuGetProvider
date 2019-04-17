@@ -1476,7 +1476,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         {
                             // report that we finished with the download
                             request.Progress(progressTracker.ProgressID, progressTracker.EndPercent,
-                                string.Format(CultureInfo.CurrentCulture, Resources.Messages.DownloadingProgress, totalDownloaded, totalBytesToReceive));
+                                string.Format(CultureInfo.CurrentCulture, Resources.Messages.DownloadingProgress, totalBytesToReceiveMB, totalBytesToReceiveMB));
 
                             request.Verbose(Messages.CompletedDownload, query);
 
