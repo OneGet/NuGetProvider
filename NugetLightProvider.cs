@@ -368,37 +368,59 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
             try {
 
-            
-            // If there are any packages, yield and return
-            if (request.YieldPackages(request.GetPackageById(name, request, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive), name))
-            {
-                return;
-            }
+                // If there are any packages, yield and return
+                if (request.YieldPackages(request.GetPackageById(name, request, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive), name))
+                {
+                    return;
+                }
 
-            // Check if the name contains wildcards. If not, return. This matches the behavior as "Get-module xje" 
-            if (!String.IsNullOrWhiteSpace(name) && !WildcardPattern.ContainsWildcardCharacters(name))
-            {              
-                return;
-            }
+                // If no packages were found, try again using credentials retrieved from credential provider
+                // First call to the credential provider is to get credentials, but if those credentials fail,
+                // we call the cred provider again to ask the user for new credentials, and then search pkgs again using new creds
+                var credentials = request.GetCredsFromCredProvider(request.Sources.First(), request, false);
+                var newclient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, null);
+                request.SetHttpClient(newclient);
 
-            // In the case of the package name is null or contains wildcards, error out if a user puts version info
-            if (!String.IsNullOrWhiteSpace(requiredVersion) || !String.IsNullOrWhiteSpace(minimumVersion) || !String.IsNullOrWhiteSpace(maximumVersion))
-            {
-                request.Warning( Constants.Messages.MissingRequiredParameter, "name");
-                return;
-            }
-            
-            
-       
-            // Have we been cancelled?
-            if (request.IsCanceled) {
-                request.Debug(Resources.Messages.RequestCanceled, PackageProviderName, "FindPackage");
+                if (request.YieldPackages(request.GetPackageById(name, request, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive), name))
+                {
+                    return;
+                }
 
-                return;
-            }
+                // Calling the credential provider for a second time, using -IsRetry
+                credentials = request.GetCredsFromCredProvider(request.Sources.First(), request, true);
+                newclient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, null);
+                request.SetHttpClient(newclient);
 
-            // A user does not provide the package full Name at all Or used wildcard in the name. Let's try searching the entire repository for matches.
-            request.YieldPackages(request.SearchForPackages(name), name);
+                // If there are any packages, yield and return
+                if (request.YieldPackages(request.GetPackageById(name, request, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive), name))
+                {
+                    return;
+                }
+
+                // Check if the name contains wildcards. If not, return. This matches the behavior as "Get-module xje" 
+                if (!String.IsNullOrWhiteSpace(name) && !WildcardPattern.ContainsWildcardCharacters(name))
+                {              
+                    return;
+                }
+
+                // In the case of the package name is null or contains wildcards, error out if a user puts version info
+                if (!String.IsNullOrWhiteSpace(requiredVersion) || !String.IsNullOrWhiteSpace(minimumVersion) || !String.IsNullOrWhiteSpace(maximumVersion))
+                {
+                    request.Warning( Constants.Messages.MissingRequiredParameter, "name");
+                    return;
+                }
+                
+                
+        
+                // Have we been cancelled?
+                if (request.IsCanceled) {
+                    request.Debug(Resources.Messages.RequestCanceled, PackageProviderName, "FindPackage");
+
+                    return;
+                }
+
+                // A user does not provide the package full Name at all Or used wildcard in the name. Let's try searching the entire repository for matches.
+                request.YieldPackages(request.SearchForPackages(name), name);
             }
             catch (Exception ex)
             {

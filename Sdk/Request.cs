@@ -114,9 +114,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
         public abstract IEnumerable<string> Sources {get;}
 
-        public abstract string CredentialUsername {get;}
+        public abstract string CredentialUsername {get; set;}
 
-        public abstract SecureString CredentialPassword {get;}
+        public abstract SecureString CredentialPassword {get; set;}
 
         public abstract IWebProxy WebProxy { get; }
 

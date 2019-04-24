@@ -118,6 +118,25 @@ namespace Microsoft.PackageManagement.NuGetProvider
         }
 
         /// <summary>
+        /// Create a RequestWrapper that calls into <paramref name="request"/> with <param name="userName"> and <param name="userPassword"> credentials.
+        /// </summary>
+        /// <param name="request">The actual Request object.</param>
+        /// <param name="userName">The userName credential.</param>
+        /// <param name="userPassword">The userPassword credential.</param>
+        public RequestWrapper(NuGetRequest request, string userName, SecureString userPassword)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException("request");
+            }
+
+            this.Request = request;
+            this.UserName = userName;
+            this.UserPassword = userPassword;
+            this.Output = new NuGetRequestOutput(request);
+        }
+
+        /// <summary>
         /// Gets or creates the HttpClient without additional headers.
         /// </summary>
         /// <returns>HttpClient using either given credentials or given Request without headers.</returns>
