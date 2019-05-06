@@ -1949,8 +1949,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
             string nuGetPluginsPathNetCore = "%UserProfile%/.nuget/plugins/netcore/CredentialProvider.Microsoft/CredentialProvider.Microsoft.exe";
             string nugetPluginsPathNetFramework = "%UserProfile%/.nuget/plugins/netfx/CredentialProvider.Microsoft/CredentialProvider.Microsoft.exe";
             string nugetPluginPath = Environment.GetEnvironmentVariable(defaultEnvPath);
-            string fullNuGetPluginsPathNetCore = Environment.ExpandEnvironmentVariables(NuGetPluginsPathNetCore);
-            string nuGetPluginsPathNetFramework = Environment.ExpandEnvironmentVariables(NugetPluginsPathNetFramework);
+            string fullNuGetPluginsPathNetCore = Environment.ExpandEnvironmentVariables(nuGetPluginsPathNetCore);
+            string nuGetPluginsPathNetFramework = Environment.ExpandEnvironmentVariables(nugetPluginsPathNetFramework);
             if (!nugetPluginPath.IsNullOrEmpty())
             {
                 credProviderPath = nugetPluginPath;
