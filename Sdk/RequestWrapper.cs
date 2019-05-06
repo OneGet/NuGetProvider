@@ -121,9 +121,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// Create a RequestWrapper that calls into <paramref name="request"/> with <param name="userName"> and <param name="userPassword"> credentials.
         /// </summary>
         /// <param name="request">The actual Request object.</param>
-        /// <param name="userName">The userName credential.</param>
-        /// <param name="userPassword">The userPassword credential.</param>
-        public RequestWrapper(NuGetRequest request, string userName, SecureString userPassword)
+        /// <param name="credential">The NetworkCredential object.</param>
+        public RequestWrapper(NuGetRequest request, NetworkCredential credential)
         {
             if (request == null)
             {
@@ -131,8 +130,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
 
             this.Request = request;
-            this.UserName = userName;
-            this.UserPassword = userPassword;
+            this.UserName = credential.UserName;
+            this.UserPassword = credential.SecurePassword;
             this.Output = new NuGetRequestOutput(request);
         }
 

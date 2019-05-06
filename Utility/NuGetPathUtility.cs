@@ -157,7 +157,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 // If the query feed exists, it's a non-local repo
                 // Check the query feed to make sure it's available
                 // Optionally we could change this to check the packages feed for availability
-                if (repo.ResourceProvider.QueryFeed == null || !repo.ResourceProvider.QueryFeed.IsAvailable(new RequestWrapper(request, credentials.UserName, credentials.SecurePassword)))
+                if (repo.ResourceProvider.QueryFeed == null || !repo.ResourceProvider.QueryFeed.IsAvailable(new RequestWrapper(request, credentials)))
                 {
                     return null;
                 }
