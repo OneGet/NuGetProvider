@@ -332,7 +332,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             if (request == null){
                 throw new ArgumentNullException("request");
             }
-            
+
             // true if we want to include the max and min version
             bool minInclusive = true;
             bool maxInclusive = true;
@@ -359,73 +359,88 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     {
                         requiredVersion = null;
                     }
-                }                
+                }
             }
 
             request.Debug(Resources.Messages.DebugInfoCallMethod, PackageProviderName, string.Format(CultureInfo.InvariantCulture, "FindPackage' - name='{0}', requiredVersion='{1}',minimumVersion='{2}', maximumVersion='{3}'", name, requiredVersion, minimumVersion, maximumVersion));
 
             NormalizeVersion(request, ref requiredVersion, ref minimumVersion, ref maximumVersion);
 
+            // First call to SearchPackages will just look for the packages with current credentials 
+            if (SearchPackages(name, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive, id, request))
+            {
+                return;
+            }
+
+            // If no packages were found, try again using credentials retrieved from credential provider
+            // First call to the credential provider is to get credentials, but if those credentials fail,
+            // we call the cred provider again to ask the user for new credentials, and then search pkgs again using new creds
+            var query = new Uri(request.FindRegisteredSource(request.Sources.First()).Location.IsNullOrEmpty() ? request.Sources.First() : request.FindRegisteredSource(request.Sources.First()).Location);
+            var credentials = request.GetCredsFromCredProvider(query.AbsoluteUri, request, false);
+            var newclient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, null);
+            request.SetHttpClient(newclient);
+
+            if (SearchPackages(name, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive, id, request))
+            {
+                return;
+            }
+
+            // Calling the credential provider for a second time, using -IsRetry 
+            credentials = request.GetCredsFromCredProvider(query.AbsoluteUri, request, true);
+            newclient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, null);
+            request.SetHttpClient(newclient);
+
+            if (SearchPackages(name, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive, id, request))
+            {
+                return;
+            }
+
+        }
+
+        public bool SearchPackages(string name, string requiredVersion, string minimumVersion, string maximumVersion, bool minInclusive, bool maxInclusive, int id, NuGetRequest request)
+        {
             try {
-
                 // If there are any packages, yield and return
                 if (request.YieldPackages(request.GetPackageById(name, request, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive), name))
                 {
-                    return;
-                }
-
-                // If no packages were found, try again using credentials retrieved from credential provider
-                // First call to the credential provider is to get credentials, but if those credentials fail,
-                // we call the cred provider again to ask the user for new credentials, and then search pkgs again using new creds
-                var credentials = request.GetCredsFromCredProvider(request.Sources.First(), request, false);
-                var newclient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, null);
-                request.SetHttpClient(newclient);
-
-                if (request.YieldPackages(request.GetPackageById(name, request, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive), name))
-                {
-                    return;
-                }
-
-                // Calling the credential provider for a second time, using -IsRetry
-                credentials = request.GetCredsFromCredProvider(request.Sources.First(), request, true);
-                newclient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, null);
-                request.SetHttpClient(newclient);
-
-                // If there are any packages, yield and return
-                if (request.YieldPackages(request.GetPackageById(name, request, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive), name))
-                {
-                    return;
+                    return true;
                 }
 
                 // Check if the name contains wildcards. If not, return. This matches the behavior as "Get-module xje" 
                 if (!String.IsNullOrWhiteSpace(name) && !WildcardPattern.ContainsWildcardCharacters(name))
-                {              
-                    return;
+                {
+                    return false;
                 }
 
                 // In the case of the package name is null or contains wildcards, error out if a user puts version info
                 if (!String.IsNullOrWhiteSpace(requiredVersion) || !String.IsNullOrWhiteSpace(minimumVersion) || !String.IsNullOrWhiteSpace(maximumVersion))
                 {
-                    request.Warning( Constants.Messages.MissingRequiredParameter, "name");
-                    return;
+                    request.Warning(Constants.Messages.MissingRequiredParameter, "name");
+                    return false;
                 }
-                
-                
-        
+
+
+
                 // Have we been cancelled?
-                if (request.IsCanceled) {
+                if (request.IsCanceled)
+                {
                     request.Debug(Resources.Messages.RequestCanceled, PackageProviderName, "FindPackage");
 
-                    return;
+                    return false;
                 }
 
                 // A user does not provide the package full Name at all Or used wildcard in the name. Let's try searching the entire repository for matches.
-                request.YieldPackages(request.SearchForPackages(name), name);
+                if (request.YieldPackages(request.SearchForPackages(name), name))
+                {
+                    return true;
+                }
             }
             catch (Exception ex)
             {
                 ex.Dump(request);
             }
+
+            return false;
         }
 
         /// <summary>
