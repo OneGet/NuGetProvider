@@ -130,8 +130,11 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
 
             this.Request = request;
-            this.UserName = credential.UserName;
-            this.UserPassword = credential.SecurePassword;
+            if (credential != null)
+            {
+                this.UserName = credential.UserName;
+                this.UserPassword = credential.SecurePassword;
+            }
             this.Output = new NuGetRequestOutput(request);
         }
 
