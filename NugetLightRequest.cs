@@ -2051,6 +2051,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             {
                 arguments = arguments + " -I ";
             }
+            proc.StartInfo.FileName = filename;
             proc.StartInfo.Arguments = arguments;
             // Need to redirect to save tokens
             proc.StartInfo.RedirectStandardOutput = true;
@@ -2067,12 +2068,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 {
                     string line = reader.ReadLine();
                     // Need to decide the level of verbosity that should be displayed (or whether a user specified flag should determine this)
-                    if (Regex.IsMatch(line, @"Minimal"))
-                    {
-                        // Minimal will always print to console
-                        Console.WriteLine(line);
-                    }
-                    else if (Regex.IsMatch(line, @"Verbose"))
+                    if (Regex.IsMatch(line, @"Verbose"))
                     {
                         // Verbose will only print if user passes -Verbose
                         request.Verbose(line);
@@ -2094,6 +2090,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
                             Match passwordMatch = Regex.Match(line, @"(?<=\: ).*");
                             password = passwordMatch.ToString();
                         }
+                    }
+                    else{
+                        // Minimal or any other output will always print to console
+                        Console.WriteLine(line);
                     }
                 }
             }
