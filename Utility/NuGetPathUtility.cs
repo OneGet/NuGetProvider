@@ -108,7 +108,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 {
                     if (response.StatusCode == HttpStatusCode.Unauthorized)
                     {
-                        // If the uri is not validted, try again using credentials retrieved from credential provider
+                        // If the uri is not validated, try again using credentials retrieved from credential provider
                         // First call to the credential provider is to get credentials, but if those credentials fail,
                         // we call the cred provider again to ask the user for new credentials, and then search try to validate uri again using new creds
                         credentials = request.GetCredsFromCredProvider(query.AbsoluteUri.ToString(), request, false);

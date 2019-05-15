@@ -1935,9 +1935,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
         {
             if (query.IsNullOrEmpty())
             {
-                throw new ArgumentNullException("query");
+                request.Debug("Query is null.");
             }
 
+            var osPlatform = Environment.OSVersion.Platform;
             string username = "";
             string password = "";
             // Find credential provider
@@ -1945,30 +1946,38 @@ namespace Microsoft.PackageManagement.NuGetProvider
             // see: https://docs.microsoft.com/en-us/nuget/reference/extensibility/nuget-cross-platform-plugins#plugin-installation-and-discovery
             // Note: OSX and Linux can only use option 1
             string credProviderPath = "";
+            // Nuget prioritizes credential providers stored in the NUGET_PLUGIN_PATHS env var
             string defaultEnvPath = "NUGET_PLUGIN_PATHS";
-            string nuGetPluginsPathNetCore = "%UserProfile%/.nuget/plugins/netcore/CredentialProvider.Microsoft/CredentialProvider.Microsoft.exe";
-            string nugetPluginsPathNetFramework = "%UserProfile%/.nuget/plugins/netfx/CredentialProvider.Microsoft/CredentialProvider.Microsoft.exe";
             string nugetPluginPath = Environment.GetEnvironmentVariable(defaultEnvPath);
-            string fullNuGetPluginsPathNetCore = Environment.ExpandEnvironmentVariables(nuGetPluginsPathNetCore);
-            string nuGetPluginsPathNetFramework = Environment.ExpandEnvironmentVariables(nugetPluginsPathNetFramework);
+
             if (!nugetPluginPath.IsNullOrEmpty())
             {
                 credProviderPath = nugetPluginPath;
             }
-            else if (!OSInformation.IsWindowsPowerShell && File.Exists(nuGetPluginsPathNetCore)) 
+            else
             {
-                credProviderPath = nuGetPluginsPathNetCore;
-            }
-            else if (OSInformation.IsWindowsPowerShell && File.Exists(nuGetPluginsPathNetFramework))
-            {
-                credProviderPath = nuGetPluginsPathNetFramework;
+                string path = "";
+                if (osPlatform != PlatformID.Unix && !OSInformation.IsWindowsPowerShell)
+                {   
+                    // If running Windows and PSCore
+                    path = "%UserProfile%/.nuget/plugins/netcore/CredentialProvider.Microsoft/CredentialProvider.Microsoft.exe";
+                }
+                else if (osPlatform != PlatformID.Unix && OSInformation.IsWindowsPowerShell)
+                {
+                    // If running Windows and Windows PS
+                    path = "%UserProfile%/.nuget/plugins/netfx/CredentialProvider.Microsoft/CredentialProvider.Microsoft.exe";
+                }
+                else {
+                    // If running Unix
+                    path = "$HOME/.nuget/plugins/netcore/CredentialProvider.Microsoft/CredentialProvider.Microsoft.dll";
+                }
+                credProviderPath = Environment.ExpandEnvironmentVariables(path);
             }
 
             // Option 2. Use Visual Studio path to find credential provider
             // Visual Studio comes pre-installed with the Azure Artifacts credential provider, so we'll search for that file using vswhere.exe
             // If Windows (ie not unix), we'll use vswhere.exe to find installation path of VS
             // If credProviderPath is already set we can skip option 2
-            var osPlatform = Environment.OSVersion.Platform;
             if (credProviderPath.IsNullOrEmpty() && osPlatform != PlatformID.Unix)
             {
                 string vswhereExePath = "";
@@ -2013,7 +2022,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e.Message);
+                   request.Debug(e.Message);
                 }
                 finally
                 {
@@ -2023,7 +2032,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 // ex: "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise" + "\Common7\IDE\CommonExtensions\Microsoft\NuGet\Plugins\CredentialProvider.Microsoft\CredentialProvider.Microsoft.exe"
                 if (vsInstallationPath.IsNullOrEmpty())
                 {
-                    throw new ArgumentNullException("vsInstallationPath");
+                    request.Debug("vsInstallationPath is null.");
                 }
                 credProviderPath = vsInstallationPath + "\\Common7\\IDE\\CommonExtensions\\Microsoft\\NuGet\\Plugins\\CredentialProvider.Microsoft\\CredentialProvider.Microsoft.exe";
             }
@@ -2031,11 +2040,16 @@ namespace Microsoft.PackageManagement.NuGetProvider
             // Using a process to run CredentialProvider.Microsoft.exe with arguments -V verbose -U query (and -IsRetry when appropriate)
             // See: https://github.com/Microsoft/artifacts-credprovider
             Process proc = new Process();
-            proc.StartInfo.FileName = credProviderPath;
+            var filename = credProviderPath;
             var arguments = "-V verbose -U " + query;
+            if (osPlatform == PlatformID.Unix)
+            {
+                filename = "dotnet";
+                arguments = credProviderPath + " " + arguments;
+            }
             if (isRetry)
             {
-                arguments = "-I " + arguments;
+                arguments = arguments + " -I ";
             }
             proc.StartInfo.Arguments = arguments;
             // Need to redirect to save tokens
@@ -2085,7 +2099,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                request.Debug(e.Message);
             }
             finally
             {
