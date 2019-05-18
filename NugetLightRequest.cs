@@ -1933,6 +1933,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
         internal NetworkCredential GetCredsFromCredProvider(string query, NuGetRequest request, bool isRetry=false)
         {
+            request.Debug("Calling 'GetCredsFromCredProvider' on {0}", query);
             if (query.IsNullOrEmpty())
             {
                 request.Debug("Query is null.");
@@ -1956,18 +1957,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
             else
             {
-                string path = "";
-                if (osPlatform != PlatformID.Unix && !OSInformation.IsWindowsPowerShell)
-                {   
-                    // If running Windows and PSCore
-                    path = "%UserProfile%/.nuget/plugins/netcore/CredentialProvider.Microsoft/CredentialProvider.Microsoft.exe";
-                }
-                else if (osPlatform != PlatformID.Unix && OSInformation.IsWindowsPowerShell)
+                string path = "%UserProfile%/.nuget/plugins/netcore/CredentialProvider.Microsoft/CredentialProvider.Microsoft.dll";
+                if (osPlatform == PlatformID.Unix)
                 {
-                    // If running Windows and Windows PS
-                    path = "%UserProfile%/.nuget/plugins/netfx/CredentialProvider.Microsoft/CredentialProvider.Microsoft.exe";
-                }
-                else {
                     // If running Unix
                     path = "$HOME/.nuget/plugins/netcore/CredentialProvider.Microsoft/CredentialProvider.Microsoft.dll";
                 }
@@ -2040,13 +2032,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
             // Using a process to run CredentialProvider.Microsoft.exe with arguments -V verbose -U query (and -IsRetry when appropriate)
             // See: https://github.com/Microsoft/artifacts-credprovider
             Process proc = new Process();
-            var filename = credProviderPath;
-            var arguments = "-V verbose -U " + query;
-            if (osPlatform == PlatformID.Unix)
-            {
-                filename = "dotnet";
-                arguments = credProviderPath + " " + arguments;
-            }
+            var filename = "dotnet";
+            var arguments = credProviderPath + " -V verbose -U " + query;
             if (isRetry)
             {
                 arguments = arguments + " -I ";
@@ -2060,6 +2047,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
             try
             {
+                request.Debug("Calling credential provider installed at {0}", credProviderPath);
                 proc.Start();
                 StreamReader reader = proc.StandardOutput;
 
