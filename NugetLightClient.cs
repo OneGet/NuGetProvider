@@ -1223,12 +1223,20 @@ namespace Microsoft.PackageManagement.NuGetProvider
             // Check that response was successful or throw exception
             if (response == null || !response.IsSuccessStatusCode)
             {
-                if (!ignoreNullResponse)
+                var newClient = PathUtility.GetHttpClientHelper(request.UserName, request.UserPassword, null);
+
+                var newResponse = PathUtility.GetHttpResponse(newClient, query, (() => request.IsCanceled()),
+                    ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg), remainingTry: tries);
+
+                if (newResponse == null || !newResponse.IsSuccessStatusCode)
                 {
-                    request.Warning(Resources.Messages.CouldNotGetResponseFromQuery, query);
-                } else
-                {
-                    request.Debug(Resources.Messages.CouldNotGetResponseFromQuery, query);
+                    if (!ignoreNullResponse)
+                    {
+                        request.Warning(Resources.Messages.CouldNotGetResponseFromQuery, query);
+                    } else
+                    {
+                        request.Debug(Resources.Messages.CouldNotGetResponseFromQuery, query);
+                    }
                 }
 
                 return null;

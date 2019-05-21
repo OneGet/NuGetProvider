@@ -79,7 +79,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
         private static INuGetResourceCollection GetResourcesImpl(string baseUrl, RequestWrapper request)
         {
             INuGetResourceCollection res = null;
-            HttpClient client = request.GetClient();
+            HttpClient client = request.GetClientWithHeaders();
             HttpResponseMessage response = PathUtility.GetHttpResponse(client, baseUrl, (() => request.IsCanceled()),
                 ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg));
             if (!response.IsSuccessStatusCode)

@@ -1,4 +1,5 @@
 ﻿using System.Security.AccessControl;
+using Microsoft.PackageManagement.Internal.Utility.Platform;
 
 namespace Microsoft.PackageManagement.NuGetProvider
 {
@@ -23,6 +24,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
     using SemanticVersion = Microsoft.PackageManagement.Provider.Utility.SemanticVersion;
     using Microsoft.PackageManagement.Provider.Utility;
     using Microsoft.PackageManagement.Internal.Utility.Platform;
+    using System.Diagnostics;
 
     /// <summary> 
     /// This class drives the Request class that is an interface exposed from the PackageManagement Platform to the provider to use.
@@ -59,6 +61,25 @@ namespace Microsoft.PackageManagement.NuGetProvider
         private HttpClient _httpClient;
         private HttpClient _httpClientWithoutAcceptHeader;
         private bool? _isCalledFromPowerShellGet;
+        private string _CredentialUsername;
+        private SecureString _CredentialPassword;
+
+        public HttpClient SetHttpClient (HttpClient client)
+        {
+            return _httpClient = client;
+        }
+
+        public override string CredentialUsername
+        {
+            get { return _CredentialUsername; }
+            set { _CredentialUsername = value; }
+        }
+
+        public override SecureString CredentialPassword
+        {
+            get { return _CredentialPassword; }
+            set { _CredentialPassword = value; }
+        }
 
         internal const string DefaultConfig = @"<?xml version=""1.0""?>
 <configuration>
@@ -1908,6 +1929,172 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 Warning(e.Message);
                 return Enumerable.Empty<PackageItem>();
             }
+        }
+
+        internal NetworkCredential GetCredsFromCredProvider(string query, NuGetRequest request, bool isRetry=false)
+        {
+            request.Debug("Calling 'GetCredsFromCredProvider' on {0}", query);
+            if (query.IsNullOrEmpty())
+            {
+                request.Debug("Query is null.");
+            }
+
+            var osPlatform = Environment.OSVersion.Platform;
+            string username = "";
+            string password = "";
+            // Find credential provider
+            // Option 1. Use env var 'NUGET_PLUGIN_PATHS' to find credential provider
+            // see: https://docs.microsoft.com/en-us/nuget/reference/extensibility/nuget-cross-platform-plugins#plugin-installation-and-discovery
+            // Note: OSX and Linux can only use option 1
+            string credProviderPath = "";
+            // Nuget prioritizes credential providers stored in the NUGET_PLUGIN_PATHS env var
+            string defaultEnvPath = "NUGET_PLUGIN_PATHS";
+            string nugetPluginPath = Environment.GetEnvironmentVariable(defaultEnvPath);
+
+            if (!nugetPluginPath.IsNullOrEmpty())
+            {
+                credProviderPath = nugetPluginPath;
+            }
+            else
+            {
+                string path = "%UserProfile%/.nuget/plugins/netcore/CredentialProvider.Microsoft/CredentialProvider.Microsoft.dll";
+                if (osPlatform == PlatformID.Unix)
+                {
+                    // If running Unix
+                    path = "$HOME/.nuget/plugins/netcore/CredentialProvider.Microsoft/CredentialProvider.Microsoft.dll";
+                }
+                credProviderPath = Environment.ExpandEnvironmentVariables(path);
+            }
+
+            // Option 2. Use Visual Studio path to find credential provider
+            // Visual Studio comes pre-installed with the Azure Artifacts credential provider, so we'll search for that file using vswhere.exe
+            // If Windows (ie not unix), we'll use vswhere.exe to find installation path of VS
+            // If credProviderPath is already set we can skip option 2
+            if (credProviderPath.IsNullOrEmpty() && osPlatform != PlatformID.Unix)
+            {
+                string vswhereExePath = "";
+                // Check both Program Files x86, and Program Files, respectively
+                string vswhereExePath64 = "%ProgramFiles(x86)%\\Microsoft Visual Studio\\Installer\\vswhere.exe";
+                string vswhereExePath32 = "%ProgramFiles%\\Microsoft Visual Studio\\Installer\\vswhere.exe";
+                string fullVswhereExePath64 = Environment.ExpandEnvironmentVariables(vswhereExePath64);
+                string fullVswhereExePath32 = Environment.ExpandEnvironmentVariables(vswhereExePath32);
+                if (File.Exists(vswhereExePath64))
+                {
+                    // If the env variable exists, check to see if the path itself exists
+                    vswhereExePath = fullVswhereExePath64;
+                }
+                else if (File.Exists(vswhereExePath32))
+                {
+                    vswhereExePath = fullVswhereExePath32;
+                }
+
+                // Using a process to run VsWhere.exe so that we can find the installation path of Visual Studio
+                Process process = new Process();
+                process.StartInfo.FileName = vswhereExePath;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.CreateNoWindow = false;
+                process.StartInfo.UseShellExecute = false;
+                string vsInstallationPath = "";
+                try
+                {
+                    process.Start();
+                    StreamReader reader = process.StandardOutput;
+
+                    while (!reader.EndOfStream)
+                    {
+                        string line = reader.ReadLine();
+                        if (Regex.IsMatch(line, @"installationPath"))
+                        {
+                            // Match all chars after 'installationPath:'
+                            Match vsInstallPathMatch = Regex.Match(line, @"(?<=\: ).*");
+                            vsInstallationPath = vsInstallPathMatch.ToString();
+                            break;
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                   request.Debug(e.Message);
+                }
+                finally
+                {
+                    process.Close();
+                }
+                // Then use the installation path discovered by vswhere.exe to create the path to search for credential provider
+                // ex: "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise" + "\Common7\IDE\CommonExtensions\Microsoft\NuGet\Plugins\CredentialProvider.Microsoft\CredentialProvider.Microsoft.exe"
+                if (vsInstallationPath.IsNullOrEmpty())
+                {
+                    request.Debug("vsInstallationPath is null.");
+                }
+                credProviderPath = vsInstallationPath + "\\Common7\\IDE\\CommonExtensions\\Microsoft\\NuGet\\Plugins\\CredentialProvider.Microsoft\\CredentialProvider.Microsoft.exe";
+            }
+
+            // Using a process to run CredentialProvider.Microsoft.exe with arguments -V verbose -U query (and -IsRetry when appropriate)
+            // See: https://github.com/Microsoft/artifacts-credprovider
+            Process proc = new Process();
+            var filename = "dotnet";
+            var arguments = credProviderPath + " -V verbose -U " + query;
+            if (isRetry)
+            {
+                arguments = arguments + " -I ";
+            }
+            proc.StartInfo.FileName = filename;
+            proc.StartInfo.Arguments = arguments;
+            // Need to redirect to save tokens
+            proc.StartInfo.RedirectStandardOutput = true;
+            proc.StartInfo.CreateNoWindow = false;
+            proc.StartInfo.UseShellExecute = false;
+
+            try
+            {
+                request.Debug("Calling credential provider installed at {0}", credProviderPath);
+                proc.Start();
+                StreamReader reader = proc.StandardOutput;
+
+                // Write the redirected output to console
+                while (!reader.EndOfStream)
+                {
+                    string line = reader.ReadLine();
+                    // Need to decide the level of verbosity that should be displayed (or whether a user specified flag should determine this)
+                    if (Regex.IsMatch(line, @"Verbose"))
+                    {
+                        // Verbose will only print if user passes -Verbose
+                        request.Verbose(line);
+                    }
+                    else if (Regex.IsMatch(line, @"Information"))
+                    {
+                        // Information will never print to console
+                        // Username and password is provided in the following format:
+                        // "[Information] [CredentialProvider]Username: "
+                        if (Regex.IsMatch(line, @"Username"))
+                        {
+                            // Match all chars after 'Username:'
+                            Match usernameMatch = Regex.Match(line, @"(?<=\: ).*");
+                            username = usernameMatch.ToString();
+                        }
+                        else if (Regex.IsMatch(line, @"Password"))
+                        {
+                            // Match all chars after 'Password:'
+                            Match passwordMatch = Regex.Match(line, @"(?<=\: ).*");
+                            password = passwordMatch.ToString();
+                        }
+                    }
+                    else{
+                        // Minimal or any other output will always print to console
+                        Console.WriteLine(line);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                request.Debug(e.Message);
+            }
+            finally
+            {
+                proc.Close();
+            }
+
+            return new NetworkCredential(username, password);
         }
     }
 }
