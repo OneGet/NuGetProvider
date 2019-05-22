@@ -1950,6 +1950,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             // Nuget prioritizes credential providers stored in the NUGET_PLUGIN_PATHS env var
             string defaultEnvPath = "NUGET_PLUGIN_PATHS";
             string nugetPluginPath = Environment.GetEnvironmentVariable(defaultEnvPath);
+            bool callDotnet = true;
 
             if (!nugetPluginPath.IsNullOrEmpty())
             {
@@ -2030,6 +2031,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     request.Debug("vsInstallationPath is null.");
                 }
                 credProviderPath = vsInstallationPath + "\\Common7\\IDE\\CommonExtensions\\Microsoft\\NuGet\\Plugins\\CredentialProvider.Microsoft\\CredentialProvider.Microsoft.exe";
+                callDotnet = false;
             }
 
             // Using a process to run CredentialProvider.Microsoft.exe with arguments -V verbose -U query (and -IsRetry when appropriate)
@@ -2037,7 +2039,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             Process proc = new Process();
             var filename = credProviderPath;
             var arguments = "-V verbose -U " + query;
-             if (osPlatform == PlatformID.Unix)
+             if (callDotnet)
             {
                 filename = "dotnet";
                 arguments = credProviderPath + " " + arguments;
