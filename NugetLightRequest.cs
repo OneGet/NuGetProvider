@@ -2034,7 +2034,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             Process proc = new Process();
             var filename = credProviderPath;
             var arguments = "-V verbose -U " + query;
-             if (callDotnet)
+            if (callDotnet)
             {
                 filename = "dotnet";
                 arguments = credProviderPath + " " + arguments;
