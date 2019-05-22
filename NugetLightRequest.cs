@@ -1950,6 +1950,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             // Nuget prioritizes credential providers stored in the NUGET_PLUGIN_PATHS env var
             string defaultEnvPath = "NUGET_PLUGIN_PATHS";
             string nugetPluginPath = Environment.GetEnvironmentVariable(defaultEnvPath);
+            bool callDotnet = true;
 
             if (!nugetPluginPath.IsNullOrEmpty())
             {
@@ -1963,7 +1964,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     // If running Unix
                     path = "$HOME/.nuget/plugins/netcore/CredentialProvider.Microsoft/CredentialProvider.Microsoft.dll";
                 }
-                credProviderPath = Environment.ExpandEnvironmentVariables(path);
+                if (File.Exists(Environment.ExpandEnvironmentVariables(path)))
+                {
+                    credProviderPath = Environment.ExpandEnvironmentVariables(path);
+                }
             }
 
             // Option 2. Use Visual Studio path to find credential provider
@@ -1972,20 +1976,14 @@ namespace Microsoft.PackageManagement.NuGetProvider
             // If credProviderPath is already set we can skip option 2
             if (credProviderPath.IsNullOrEmpty() && osPlatform != PlatformID.Unix)
             {
-                string vswhereExePath = "";
-                // Check both Program Files x86, and Program Files, respectively
-                string vswhereExePath64 = "%ProgramFiles(x86)%\\Microsoft Visual Studio\\Installer\\vswhere.exe";
-                string vswhereExePath32 = "%ProgramFiles%\\Microsoft Visual Studio\\Installer\\vswhere.exe";
-                string fullVswhereExePath64 = Environment.ExpandEnvironmentVariables(vswhereExePath64);
-                string fullVswhereExePath32 = Environment.ExpandEnvironmentVariables(vswhereExePath32);
-                if (File.Exists(vswhereExePath64))
+                // Checks both Program Files gram Files, respectively
+                var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+                string vswhereExePath = programFiles + "\\Microsoft Visual Studio\\Installer\\vswhere.exe";
+                string fullVSwhereExePath = Environment.ExpandEnvironmentVariables(vswhereExePath);
+                // If the env variable exists, check to see if the path itself exists
+                if (File.Exists(fullVSwhereExePath))
                 {
-                    // If the env variable exists, check to see if the path itself exists
-                    vswhereExePath = fullVswhereExePath64;
-                }
-                else if (File.Exists(vswhereExePath32))
-                {
-                    vswhereExePath = fullVswhereExePath32;
+                    vswhereExePath = fullVSwhereExePath;
                 }
 
                 // Using a process to run VsWhere.exe so that we can find the installation path of Visual Studio
@@ -2027,6 +2025,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     request.Debug("vsInstallationPath is null.");
                 }
                 credProviderPath = vsInstallationPath + "\\Common7\\IDE\\CommonExtensions\\Microsoft\\NuGet\\Plugins\\CredentialProvider.Microsoft\\CredentialProvider.Microsoft.exe";
+                callDotnet = false;
             }
 
             // Using a process to run CredentialProvider.Microsoft.exe with arguments -V verbose -U query (and -IsRetry when appropriate)
@@ -2034,7 +2033,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             Process proc = new Process();
             var filename = credProviderPath;
             var arguments = "-V verbose -U " + query;
-             if (osPlatform == PlatformID.Unix)
+            if (callDotnet)
             {
                 filename = "dotnet";
                 arguments = credProviderPath + " " + arguments;
