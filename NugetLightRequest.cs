@@ -2032,8 +2032,13 @@ namespace Microsoft.PackageManagement.NuGetProvider
             // Using a process to run CredentialProvider.Microsoft.exe with arguments -V verbose -U query (and -IsRetry when appropriate)
             // See: https://github.com/Microsoft/artifacts-credprovider
             Process proc = new Process();
-            var filename = "dotnet";
-            var arguments = credProviderPath + " -V verbose -U " + query;
+            var filename = credProviderPath;
+            var arguments = "-V verbose -U " + query;
+             if (osPlatform == PlatformID.Unix)
+            {
+                filename = "dotnet";
+                arguments = credProviderPath + " " + arguments;
+            }
             if (isRetry)
             {
                 arguments = arguments + " -I ";
