@@ -1976,15 +1976,14 @@ namespace Microsoft.PackageManagement.NuGetProvider
             // If credProviderPath is already set we can skip option 2
             if (credProviderPath.IsNullOrEmpty() && osPlatform != PlatformID.Unix)
             {
-                string vswhereExePath = "";
                 // Checks both Program Files gram Files, respectively
                 var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
                 string vswhereExePath = programFiles + "\\Microsoft Visual Studio\\Installer\\vswhere.exe";
-                string fullVSwhereExePath = Environment.ExpandEnvironmentVariables(vswhereExePath64);
+                string fullVSwhereExePath = Environment.ExpandEnvironmentVariables(vswhereExePath);
                 // If the env variable exists, check to see if the path itself exists
                 if (File.Exists(fullVSwhereExePath))
                 {
-                    vswhereExePath = fullVswhereExePath64;
+                    vswhereExePath = fullVSwhereExePath;
                 }
 
                 // Using a process to run VsWhere.exe so that we can find the installation path of Visual Studio
