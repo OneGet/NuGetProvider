@@ -1963,7 +1963,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     // If running Unix
                     path = "$HOME/.nuget/plugins/netcore/CredentialProvider.Microsoft/CredentialProvider.Microsoft.dll";
                 }
-                credProviderPath = Environment.ExpandEnvironmentVariables(path);
+                if (File.Exists(Environment.ExpandEnvironmentVariables(path)))
+                {
+                    credProviderPath = Environment.ExpandEnvironmentVariables(path);
+                }
             }
 
             // Option 2. Use Visual Studio path to find credential provider
