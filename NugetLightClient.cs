@@ -1223,20 +1223,34 @@ namespace Microsoft.PackageManagement.NuGetProvider
             // Check that response was successful or throw exception
             if (response == null || !response.IsSuccessStatusCode)
             {
-                var newClient = PathUtility.GetHttpClientHelper(request.UserName, request.UserPassword, null);
+                // If response returns unsuccessful status code, try again using credentials retrieved from credential provider
+                // First call to the credential provider is to get credentials, but if those credentials fail,
+                // we call the cred provider again to ask the user for new credentials, and then search try to validate uri again using new creds
+                var credentials = request.Request.GetCredsFromCredProvider(query, request.Request, false);
+                var newClient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, null);
 
-                var newResponse = PathUtility.GetHttpResponse(newClient, query, (() => request.IsCanceled()),
-                    ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg), remainingTry: tries);
+                var newResponse = PathUtility.GetHttpResponse(newClient, query, (() => request.Request.IsCanceled),
+                    ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg));
+                query = newResponse.RequestMessage.RequestUri.AbsoluteUri;
+
+                request.Request.SetHttpClient(newClient);
+
+                if (newResponse.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    // Calling the credential provider for a second time, using -IsRetry
+                    credentials = request.Request.GetCredsFromCredProvider(query, request.Request, true);
+                    newClient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, null);
+
+                    newResponse = PathUtility.GetHttpResponse(newClient, query, (() => request.Request.IsCanceled),
+                        ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg));
+                    query = newResponse.RequestMessage.RequestUri.AbsoluteUri;
+
+                    request.Request.SetHttpClient(newClient);
+                }
 
                 if (newResponse == null || !newResponse.IsSuccessStatusCode)
                 {
-                    if (!ignoreNullResponse)
-                    {
-                        request.Warning(Resources.Messages.CouldNotGetResponseFromQuery, query);
-                    } else
-                    {
-                        request.Debug(Resources.Messages.CouldNotGetResponseFromQuery, query);
-                    }
+                    request.Debug(Resources.Messages.CouldNotGetResponseFromQuery, query);
                 }
 
                 return null;
@@ -1291,8 +1305,36 @@ namespace Microsoft.PackageManagement.NuGetProvider
             // Check that response was successful or write error
             if (response == null || !response.IsSuccessStatusCode)
             {
-                request.Warning(Resources.Messages.CouldNotGetResponseFromQuery, uri);
-                return null;
+                // If response returns unsuccessful status code, try again using credentials retrieved from credential provider
+                // First call to the credential provider is to get credentials, but if those credentials fail,
+                // we call the cred provider again to ask the user for new credentials, and then search try to validate uri again using new creds
+                var credentials = request.Request.GetCredsFromCredProvider(query.ToString(), request.Request, false);
+                client = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, null);
+
+                response = PathUtility.GetHttpResponse(client, query.ToString(), (() => request.Request.IsCanceled),
+                    ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg));
+                var queryStr = response.RequestMessage.RequestUri.AbsoluteUri;
+
+                request.Request.SetHttpClient(client);
+
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    // Calling the credential provider for a second time, using -IsRetry
+                    credentials = request.Request.GetCredsFromCredProvider(queryStr, request.Request, true);
+                    client = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, null);
+
+                    response = PathUtility.GetHttpResponse(client, queryStr, (() => request.Request.IsCanceled),
+                        ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg));
+                    queryStr = response.RequestMessage.RequestUri.AbsoluteUri;
+
+                    request.Request.SetHttpClient(client);
+                }
+
+                if (response == null || !response.IsSuccessStatusCode)
+                {
+                    request.Debug(Resources.Messages.CouldNotGetResponseFromQuery, uri);
+                    return null;
+                }
             }
 
             // Read response and write out a stream
