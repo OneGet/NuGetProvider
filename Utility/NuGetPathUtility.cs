@@ -15,6 +15,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
     using System.Threading;
     using System.Threading.Tasks;
     using System.Runtime.InteropServices;
+    using System.Diagnostics;
 
     internal static class NuGetPathUtility
     {
@@ -74,6 +75,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             // Validation takes place in two steps:
             //  1. Validate the given URI is valid, resolving redirection
             //  2. Validate we can hit the query service
+            NetworkCredential credentials = null;
             var client = request.ClientWithoutAcceptHeader;
 
             var response = PathUtility.GetHttpResponse(client, query.AbsoluteUri, (() => request.IsCanceled),
@@ -106,11 +108,42 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 {
                     if (response.StatusCode == HttpStatusCode.Unauthorized)
                     {
-                        request.WriteError(ErrorCategory.PermissionDenied, "ValidateUri", Resources.Messages.AccessPermissionDenied, query);
-                    }
+                        // If the uri is not validated, try again using credentials retrieved from credential provider
+                        // First call to the credential provider is to get credentials, but if those credentials fail,
+                        // we call the cred provider again to ask the user for new credentials, and then search try to validate uri again using new creds
+                        credentials = request.GetCredsFromCredProvider(query.AbsoluteUri.ToString(), request, false);
+                        var newClient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, null);
 
-                    // other status code is wrong
-                    return null;
+                        var newResponse = PathUtility.GetHttpResponse(newClient, query.AbsoluteUri, (() => request.IsCanceled),
+                            ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg));
+                        query = new Uri(newResponse.RequestMessage.RequestUri.AbsoluteUri);
+
+                        request.SetHttpClient(newClient);
+ 
+                        if (newResponse.StatusCode == HttpStatusCode.Unauthorized)
+                        {
+                            // Calling the credential provider for a second time, using -IsRetry
+                            credentials = request.GetCredsFromCredProvider(query.AbsoluteUri.ToString(), request, true);
+                            newClient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, null);
+
+                            newResponse = PathUtility.GetHttpResponse(newClient, query.AbsoluteUri, (() => request.IsCanceled),
+                                ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg));
+                            query = new Uri(newResponse.RequestMessage.RequestUri.AbsoluteUri);
+
+                            request.SetHttpClient(newClient);
+
+                            if (newResponse.StatusCode == HttpStatusCode.Unauthorized)
+                            {
+                                request.WriteError(ErrorCategory.PermissionDenied, "ValidateUri", Resources.Messages.AccessPermissionDenied, query);
+                                return null;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // other status code is wrong
+                        return null;
+                    }
                 }
             }
             else
@@ -124,7 +157,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 // If the query feed exists, it's a non-local repo
                 // Check the query feed to make sure it's available
                 // Optionally we could change this to check the packages feed for availability
-                if (repo.ResourceProvider.QueryFeed == null || !repo.ResourceProvider.QueryFeed.IsAvailable(new RequestWrapper(request)))
+                if (repo.ResourceProvider.QueryFeed == null || !repo.ResourceProvider.QueryFeed.IsAvailable(new RequestWrapper(request, credentials)))
                 {
                     return null;
                 }
