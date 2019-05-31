@@ -1250,13 +1250,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
                 if (newResponse == null || !newResponse.IsSuccessStatusCode)
                 {
-                    if (!ignoreNullResponse)
-                    {
-                        request.Warning(Resources.Messages.CouldNotGetResponseFromQuery, query);
-                    } else
-                    {
-                        request.Debug(Resources.Messages.CouldNotGetResponseFromQuery, query);
-                    }
+                    request.Debug(Resources.Messages.CouldNotGetResponseFromQuery, query);
                 }
 
                 return null;
@@ -1338,7 +1332,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
                 if (response == null || !response.IsSuccessStatusCode)
                 {
-                    request.Warning(Resources.Messages.CouldNotGetResponseFromQuery, uri);
+                    request.Debug(Resources.Messages.CouldNotGetResponseFromQuery, uri);
                     return null;
                 }
             }
