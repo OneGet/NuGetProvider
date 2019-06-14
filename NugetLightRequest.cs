@@ -1308,7 +1308,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                             {
                                 try
                                 {
-                                    Match match = (Regex.Match(srcUri.AbsoluteUri, @"((\S*pkgs.dev.azure.com\S*/v2)|(\S*pkgs.visualstudio.com\S*/v2))")).ToString();
+                                    string queryBase = (Regex.Match(srcUri.AbsoluteUri, @"((\S*pkgs.dev.azure.com\S*/v2)|(\S*pkgs.visualstudio.com\S*/v2))")).ToString();
                                     if (!queryBase.IsNullOrEmpty())
                                     {
                                         isValidated = NuGetPathUtility.ValidateSourceUri(SupportedSchemes, srcUri, this);
