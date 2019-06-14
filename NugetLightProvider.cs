@@ -377,7 +377,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             // we call the cred provider again to ask the user for new credentials, and then search pkgs again using new creds
             var query = new Uri(request.FindRegisteredSource(request.Sources.First()).Location.IsNullOrEmpty() ? request.Sources.First() : request.FindRegisteredSource(request.Sources.First()).Location);
             var credentials = request.GetCredsFromCredProvider(query.AbsoluteUri, request, false);
-            var newclient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, null);
+            var newclient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, request.WebProxy);
             request.SetHttpClient(newclient);
 
             if (SearchPackages(name, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive, id, request))
@@ -387,7 +387,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
             // Calling the credential provider for a second time, using -IsRetry 
             credentials = request.GetCredsFromCredProvider(query.AbsoluteUri, request, true);
-            newclient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, null);
+            newclient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, request.WebProxy);
             request.SetHttpClient(newclient);
 
             if (SearchPackages(name, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive, id, request))
