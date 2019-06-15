@@ -1942,8 +1942,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
         internal NetworkCredential GetCredsFromCredProvider(string query, NuGetRequest request, bool isRetry=false)
         {
             request.Debug("Calling 'GetCredsFromCredProvider' on {0}", query);
-            // example queries: https://pkgs.dev.azure.com/onegettest/_packaging/onegettest/nuget/v2 || https://msazure.pkgs.visualstudio.com/_packaging/MSNugetMirror/nuget/v2
-            string queryBase = (Regex.Match(query, @"((\S*pkgs.dev.azure.com\S*/v2)|(\S*pkgs.visualstudio.com\S*/v2))")).ToString();
+            // example query: https://pkgs.dev.azure.com/onegettest/_packaging/onegettest/nuget/v2
+            string queryBase = (Regex.Match(query, @"((\S*pkgs.dev.azure.com\S*/v2)|(\S*pkgs.visualstudio.com\S*/v2)|(\S*pkgs.dev.azure.com\S*/v3/\S*))|(\S*pkgs.visualstudio.com\S*/v3)")).ToString();
             if (queryBase.IsNullOrEmpty())
             {
                 request.Debug("Query is null.");
