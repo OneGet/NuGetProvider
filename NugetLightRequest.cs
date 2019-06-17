@@ -1308,8 +1308,16 @@ namespace Microsoft.PackageManagement.NuGetProvider
                             {
                                 try
                                 {
-                                    // Only validate once
-                                    isValidated = ConcurrentInMemoryCache.Instance.GetOrAdd(String.Format(CultureInfo.InvariantCulture, "SelectedSources:{0}", srcUri.AbsoluteUri), () => NuGetPathUtility.ValidateSourceUri(SupportedSchemes, srcUri, this));
+                                    string queryBase = (Regex.Match(srcUri.AbsoluteUri, @"((\S*pkgs.dev.azure.com\S*/v2)|(\S*pkgs.visualstudio.com\S*/v2))")).ToString();
+                                    if (!queryBase.IsNullOrEmpty())
+                                    {
+                                        isValidated = NuGetPathUtility.ValidateSourceUri(SupportedSchemes, srcUri, this);
+                                    }
+                                    else
+                                    {
+                                        // Only validate once
+                                        isValidated = ConcurrentInMemoryCache.Instance.GetOrAdd(String.Format(CultureInfo.InvariantCulture, "SelectedSources:{0}", srcUri.AbsoluteUri), () => NuGetPathUtility.ValidateSourceUri(SupportedSchemes, srcUri, this));
+                                    }
                                 }
                                 catch (Exception ex)
                                 {
@@ -1934,9 +1942,12 @@ namespace Microsoft.PackageManagement.NuGetProvider
         internal NetworkCredential GetCredsFromCredProvider(string query, NuGetRequest request, bool isRetry=false)
         {
             request.Debug("Calling 'GetCredsFromCredProvider' on {0}", query);
-            if (query.IsNullOrEmpty())
+            // example query: https://pkgs.dev.azure.com/onegettest/_packaging/onegettest/nuget/v2
+            string queryBase = (Regex.Match(query, @"((\S*pkgs.dev.azure.com\S*/v2)|(\S*pkgs.visualstudio.com\S*/v2)|(\S*pkgs.dev.azure.com\S*/v3/\S*))|(\S*pkgs.visualstudio.com\S*/v3)")).ToString();
+            if (queryBase.IsNullOrEmpty())
             {
                 request.Debug("Query is null.");
+                return null;
             }
 
             var osPlatform = Environment.OSVersion.Platform;
@@ -2032,7 +2043,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             // See: https://github.com/Microsoft/artifacts-credprovider
             Process proc = new Process();
             var filename = credProviderPath;
-            var arguments = "-V verbose -U " + query;
+            var arguments = "-V verbose -U " + queryBase;
             if (callDotnet)
             {
                 filename = "dotnet";

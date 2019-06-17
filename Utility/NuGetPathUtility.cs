@@ -111,8 +111,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         // If the uri is not validated, try again using credentials retrieved from credential provider
                         // First call to the credential provider is to get credentials, but if those credentials fail,
                         // we call the cred provider again to ask the user for new credentials, and then search try to validate uri again using new creds
-                        credentials = request.GetCredsFromCredProvider(query.AbsoluteUri.ToString(), request, false);
-                        var newClient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, null);
+                        credentials = request.GetCredsFromCredProvider(query.AbsoluteUri, request, false);
+                        var newClient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, request.WebProxy);
 
                         var newResponse = PathUtility.GetHttpResponse(newClient, query.AbsoluteUri, (() => request.IsCanceled),
                             ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg));
@@ -123,8 +123,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         if (newResponse.StatusCode == HttpStatusCode.Unauthorized)
                         {
                             // Calling the credential provider for a second time, using -IsRetry
-                            credentials = request.GetCredsFromCredProvider(query.AbsoluteUri.ToString(), request, true);
-                            newClient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, null);
+                            credentials = request.GetCredsFromCredProvider(query.AbsoluteUri, request, true);
+                            newClient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, request.WebProxy);
 
                             newResponse = PathUtility.GetHttpResponse(newClient, query.AbsoluteUri, (() => request.IsCanceled),
                                 ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg));
