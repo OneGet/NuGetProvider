@@ -77,7 +77,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             //  2. Validate we can hit the query service
             NetworkCredential credentials = null;
             var client = request.ClientWithoutAcceptHeader;
-
+   
             var response = PathUtility.GetHttpResponse(client, query.AbsoluteUri, (() => request.IsCanceled),
                 ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg));
 
@@ -104,9 +104,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     // make a new query based on location
                     query = new Uri(location);
                 }
-                else 
+                else
                 {
-                    if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    if (response.StatusCode == HttpStatusCode.Unauthorized && request.CredentialUsername.IsNullOrEmpty() && !(request.suppressCredentialProvider))
                     {
                         // If the uri is not validated, try again using credentials retrieved from credential provider
                         // First call to the credential provider is to get credentials, but if those credentials fail,
@@ -119,7 +119,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         query = new Uri(newResponse.RequestMessage.RequestUri.AbsoluteUri);
 
                         request.SetHttpClient(newClient);
- 
+
                         if (newResponse.StatusCode == HttpStatusCode.Unauthorized)
                         {
                             // Calling the credential provider for a second time, using -IsRetry
