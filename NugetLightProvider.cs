@@ -26,7 +26,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
     ///
     /// </summary>
     public class NuGetProvider
-    { 
+    {
         /// <summary>
         /// The features that this package supports.
         /// </summary>
@@ -372,27 +372,30 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 return;
             }
 
-            // If no packages were found, try again using credentials retrieved from credential provider
-            // First call to the credential provider is to get credentials, but if those credentials fail,
-            // we call the cred provider again to ask the user for new credentials, and then search pkgs again using new creds
-            var query = new Uri(request.FindRegisteredSource(request.Sources.First()).Location.IsNullOrEmpty() ? request.Sources.First() : request.FindRegisteredSource(request.Sources.First()).Location);
-            var credentials = request.GetCredsFromCredProvider(query.AbsoluteUri, request, false);
-            var newclient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, request.WebProxy);
-            request.SetHttpClient(newclient);
-
-            if (SearchPackages(name, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive, id, request))
+            if (request.CredentialUsername.IsNullOrEmpty())
             {
-                return;
-            }
+                // If no packages were found, try again using credentials retrieved from credential provider
+                // First call to the credential provider is to get credentials, but if those credentials fail,
+                // we call the cred provider again to ask the user for new credentials, and then search pkgs again using new creds
+                var query = new Uri(request.FindRegisteredSource(request.Sources.First()).Location.IsNullOrEmpty() ? request.Sources.First() : request.FindRegisteredSource(request.Sources.First()).Location);
+                var credentials = request.GetCredsFromCredProvider(query.AbsoluteUri, request, false);
+                var newclient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, request.WebProxy);
+                request.SetHttpClient(newclient);
 
-            // Calling the credential provider for a second time, using -IsRetry 
-            credentials = request.GetCredsFromCredProvider(query.AbsoluteUri, request, true);
-            newclient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, request.WebProxy);
-            request.SetHttpClient(newclient);
+                if (SearchPackages(name, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive, id, request))
+                {
+                    return;
+                }
 
-            if (SearchPackages(name, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive, id, request))
-            {
-                return;
+                // Calling the credential provider for a second time, using -IsRetry 
+                credentials = request.GetCredsFromCredProvider(query.AbsoluteUri, request, true);
+                newclient = PathUtility.GetHttpClientHelper(credentials.UserName, credentials.SecurePassword, request.WebProxy);
+                request.SetHttpClient(newclient);
+
+                if (SearchPackages(name, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive, id, request))
+                {
+                    return;
+                }
             }
 
         }

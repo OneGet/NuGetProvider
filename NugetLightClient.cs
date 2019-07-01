@@ -1223,7 +1223,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
             // Check that response was successful or throw exception
             if (response == null || !response.IsSuccessStatusCode)
             {
-                if (response != null && (response.StatusCode == HttpStatusCode.Unauthorized))
+                if (response != null && (response.StatusCode == HttpStatusCode.Unauthorized) && request.Request.CredentialUsername.IsNullOrEmpty())
                 {
                     // If response returns unsuccessful status code, try again using credentials retrieved from credential provider
                     // First call to the credential provider is to get credentials, but if those credentials fail,
@@ -1303,9 +1303,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
             var response = PathUtility.GetHttpResponse(client, uri, (() => request.IsCanceled()),
                ((msg, num) => request.Verbose(Resources.Messages.RetryingDownload, msg, num)), (msg) => request.Verbose(msg), (msg) => request.Debug(msg));
 
-
             // Check that response was successful or write error
-            if (response == null || !response.IsSuccessStatusCode)
+            if (response == null || !response.IsSuccessStatusCode && request.Request.CredentialUsername.IsNullOrEmpty())
             {
                 // If response returns unsuccessful status code, try again using credentials retrieved from credential provider
                 // First call to the credential provider is to get credentials, but if those credentials fail,

@@ -63,6 +63,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
         private bool? _isCalledFromPowerShellGet;
         private string _CredentialUsername;
         private SecureString _CredentialPassword;
+        internal bool suppressCredentialProvider = true;
 
         public HttpClient SetHttpClient (HttpClient client)
         {
@@ -1191,6 +1192,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 return Enumerable.Empty<PackageItem>();
             }
 
+            suppressCredentialProvider = false;
             return SelectedSources.AsParallel().WithMergeOptions(ParallelMergeOptions.NotBuffered).SelectMany(source => GetPackageById(source, name, request, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive, isDependency));
         }
 
@@ -1957,8 +1959,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
             // Option 1. Use env var 'NUGET_PLUGIN_PATHS' to find credential provider
             // see: https://docs.microsoft.com/en-us/nuget/reference/extensibility/nuget-cross-platform-plugins#plugin-installation-and-discovery
             // Note: OSX and Linux can only use option 1
-            string credProviderPath = "";
             // Nuget prioritizes credential providers stored in the NUGET_PLUGIN_PATHS env var
+            string credProviderPath = "";
             string defaultEnvPath = "NUGET_PLUGIN_PATHS";
             string nugetPluginPath = Environment.GetEnvironmentVariable(defaultEnvPath);
             bool callDotnet = true;
@@ -1966,6 +1968,11 @@ namespace Microsoft.PackageManagement.NuGetProvider
             if (!nugetPluginPath.IsNullOrEmpty())
             {
                 credProviderPath = nugetPluginPath;
+
+                string extension = credProviderPath.Substring(credProviderPath.Length - 4);
+                if (extension.Equals(".exe")) {
+                    callDotnet = false;
+                }
             }
             else
             {
