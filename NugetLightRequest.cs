@@ -1313,6 +1313,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                                     string queryBase = (Regex.Match(srcUri.AbsoluteUri, @"((\S*pkgs.dev.azure.com\S*/v2)|(\S*pkgs.visualstudio.com\S*/v2))")).ToString();
                                     if (!queryBase.IsNullOrEmpty())
                                     {
+                                        this.suppressCredentialProvider = false;
                                         isValidated = NuGetPathUtility.ValidateSourceUri(SupportedSchemes, srcUri, this);
                                     }
                                     else
