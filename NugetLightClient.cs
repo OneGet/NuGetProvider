@@ -79,6 +79,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
             bool needToDelete = false;
             string installFullPath = string.Empty;
 
+            // Enforce use of TLS 1.2 when sending request
+            var securityProtocol = System.Net.ServicePointManager.SecurityProtocol;
+            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+
             try
             {
                 if (!Directory.Exists(destinationPath)) {
@@ -242,6 +246,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         FileUtility.DeleteFile(installFullPath, isThrow: false);
                     }
                 }
+
+                // Change back to user specified security protocol
+                System.Net.ServicePointManager.SecurityProtocol = securityProtocol;
             }
 
             return null;
@@ -256,6 +263,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <returns></returns>
         internal static bool InstallSinglePackage(PackageItem pkgItem, NuGetRequest request, ProgressTracker progressTracker)
         {
+            // Enforce use of TLS 1.2 when sending request
+            var securityProtocol = System.Net.ServicePointManager.SecurityProtocol;
+            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+
             PackageItem packageToBeInstalled;
 
             if (pkgItem == null || pkgItem.PackageSource == null || pkgItem.PackageSource.Repository == null)
@@ -303,6 +314,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 return true;
             }
 
+            // Change back to user specified security protocol
+            System.Net.ServicePointManager.SecurityProtocol = securityProtocol;
+
             return false;
         }
 
@@ -322,6 +336,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 request.WriteError(ErrorCategory.ObjectNotFound, pkgItem.Id, Constants.Messages.UnableToResolvePackage, pkgItem.Id);
                 return false;
             }
+
+            // Enforce use of TLS 1.2 when sending request
+            var securityProtocol = System.Net.ServicePointManager.SecurityProtocol;
+            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 
             // this is if the user says -force
             bool force = request.GetOptionValue("Force") != null;
@@ -388,6 +406,11 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 ex.Dump(request);
                 return false;
             }
+            finally 
+            {
+                // Change back to user specified security protocol
+                System.Net.ServicePointManager.SecurityProtocol = securityProtocol;
+            }
 
             if (downloadSuccessful)
             {
@@ -414,6 +437,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
         internal static bool InstallOrDownloadPackageHelper(PackageItem pkgItem, NuGetRequest request, string operation,
             Func<PackageItem, ProgressTracker, bool> installOrDownloadFunction)
         {
+            // Enforce use of TLS 1.2 when sending request
+            var securityProtocol = System.Net.ServicePointManager.SecurityProtocol;
+            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+
             // pkgItem.Sources is the source that the user input. The request will try this source.
             request.OriginalSources = pkgItem.Sources;
 
@@ -497,6 +524,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 // Report that we have completed installing the package and its dependency this does not mean there are no errors.
                 // Just that it's completed.
                 request.CompleteProgress(progressTracker.ProgressID, true);
+
+                // Change back to user specified security protocol
+                System.Net.ServicePointManager.SecurityProtocol = securityProtocol;
             }
             
             // package itself didn't install. Report error
@@ -1151,6 +1181,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// 
         internal static bool DownloadPackage(string packageName, string version, string destination, string queryUrl, NuGetRequest request, PackageSource pkgSource, ProgressTracker progressTracker) 
         {
+            // Enforce use of TLS 1.2 when sending request
+            var securityProtocol = System.Net.ServicePointManager.SecurityProtocol;
+            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+
             try {                
                 request.Verbose(string.Format(CultureInfo.InvariantCulture, "DownloadPackage' - name='{0}', version='{1}',destination='{2}', uri='{3}'", packageName, version, destination, queryUrl));
 
@@ -1179,6 +1213,11 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 request.Warning(Constants.Messages.PackageFailedInstallOrDownload, packageName, CultureInfo.CurrentCulture.TextInfo.ToLower(Constants.Download));
                 throw;
             }
+            finally
+            {
+                // Change back to user specified security protocol
+                System.Net.ServicePointManager.SecurityProtocol = securityProtocol;
+            }
         }
 
         /// <summary>
@@ -1188,6 +1227,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <returns></returns>
         private static Stream GetStreamBasedOnEncoding(HttpResponseMessage response)
         {
+            // Enforce use of TLS 1.2 when sending request
+            var securityProtocol = System.Net.ServicePointManager.SecurityProtocol;
+            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+
             Stream result = response.Content.ReadAsStreamAsync().Result;
             // Gzip encoding so returns gzip stream
             if (response.Content.Headers.ContentEncoding.Contains("gzip"))
@@ -1199,6 +1242,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
             {
                 return new DeflateStream(result, CompressionMode.Decompress);
             }
+
+            // Change back to user specified security protocol
+            System.Net.ServicePointManager.SecurityProtocol = securityProtocol;
 
             return result;
         }
@@ -1213,6 +1259,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
         /// <returns></returns>
         internal static Stream DownloadDataToStream(string query, RequestWrapper request, bool ignoreNullResponse = false, int tries = 3)
         {
+            // Enforce use of TLS 1.2 when sending request
+            var securityProtocol = System.Net.ServicePointManager.SecurityProtocol;
+            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+
             request.Debug(Messages.DownloadingPackage, query);
 
             var client = request.GetClientWithHeaders();
@@ -1263,6 +1313,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
             request.Debug(Messages.CompletedDownload, query);
 
+            // Change back to user specified security protocol
+            System.Net.ServicePointManager.SecurityProtocol = securityProtocol;
+
             return stream;
         }
 
@@ -1295,6 +1348,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
         internal static Stream InitialDownloadDataToStream(UriBuilder query, int startPoint, int bufferSize, RequestWrapper request)
         {
+            // Enforce use of TLS 1.2 when sending request
+            var securityProtocol = System.Net.ServicePointManager.SecurityProtocol;
+            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+
             var uri = String.Format(CultureInfo.CurrentCulture, query.Uri.ToString(), startPoint, bufferSize);
             request.Debug(Messages.DownloadingPackage, uri);
 
@@ -1349,6 +1406,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 query.Host = response.RequestMessage.RequestUri.Host;
             }
 
+            // Change back to user specified security protocol
+            System.Net.ServicePointManager.SecurityProtocol = securityProtocol;
+
             return stream;
         }
 
@@ -1364,6 +1424,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
         internal static async Task<long> DownloadDataToFileAsync(string fileName, string query, NuGetRequest request,
             NetworkCredential networkCredential, ProgressTracker progressTracker)
         {
+            // Enforce use of TLS 1.2 when sending request
+            var securityProtocol = System.Net.ServicePointManager.SecurityProtocol;
+            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+
             request.Verbose(Messages.DownloadingPackage, query);
 
             var httpClient = request.Client;
@@ -1463,6 +1527,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
                             if (request.IsCanceled)
                             {
                                 cleanUpAction();
+                                // Change back to user specified security protocol
+                                System.Net.ServicePointManager.SecurityProtocol = securityProtocol;
                             }
                         }, null, 500, 1000);
 
@@ -1555,6 +1621,8 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 finally
                 {
                     cleanUpAction();
+                    // Change back to user specified security protocol
+                    System.Net.ServicePointManager.SecurityProtocol = securityProtocol;
                 }
             }
 

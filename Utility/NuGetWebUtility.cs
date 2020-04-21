@@ -44,6 +44,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
         public static IEnumerable<PackageBase> SendRequest(string query, RequestWrapper request)
         {
+            // Enforce use of TLS 1.2 when sending request
+            var securityProtocol = System.Net.ServicePointManager.SecurityProtocol;
+            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+
             const int bufferSize = 40;
             // number of threads sending the requests
             const int numberOfSenders = 4;
@@ -215,6 +219,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     tasks.RemoveAt(index);
                 }
             }
+
+            // Change back to user specified security protocol
+            System.Net.ServicePointManager.SecurityProtocol = securityProtocol;
         }
 
         /// <summary>

@@ -366,6 +366,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
             NormalizeVersion(request, ref requiredVersion, ref minimumVersion, ref maximumVersion);
 
+            // Enforce use of TLS 1.2 when sending request
+            var securityProtocol = System.Net.ServicePointManager.SecurityProtocol;
+            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+
             // First call to SearchPackages will just look for the packages with current credentials 
             if (SearchPackages(name, requiredVersion, minimumVersion, maximumVersion, minInclusive, maxInclusive, id, request))
             {
@@ -398,7 +402,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
                 }
             }
 
-        }
+            // Change back to user specified security protocol
+            System.Net.ServicePointManager.SecurityProtocol = securityProtocol;
+    }
 
         public bool SearchPackages(string name, string requiredVersion, string minimumVersion, string maximumVersion, bool minInclusive, bool maxInclusive, int id, NuGetRequest request)
         {
@@ -483,6 +489,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
 
             request.Debug(Resources.Messages.DebugInfoCallMethod3, PackageProviderName, fastPackageReference, destLocation);
 
+            // Enforce use of TLS 1.2 when sending request
+            var securityProtocol = System.Net.ServicePointManager.SecurityProtocol;
+            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+
             try {
                 var pkgItem = request.GetPackageByFastpath(fastPackageReference);
                 if (pkgItem == null) {
@@ -494,6 +504,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
             } catch (Exception ex) {
                 ex.Dump(request);
                 request.WriteError(ErrorCategory.InvalidOperation, fastPackageReference, ex.Message);
+            } finally {
+                // Change back to user specified security protocol
+                System.Net.ServicePointManager.SecurityProtocol = securityProtocol;
             }
         }
         
@@ -509,6 +522,10 @@ namespace Microsoft.PackageManagement.NuGetProvider
             }
 
             request.Debug(Resources.Messages.DebugInfoCallMethod3, PackageProviderName, "InstallPackage", fastPackageReference);
+
+            // Enforce use of TLS 1.2 when sending request
+            var securityProtocol = System.Net.ServicePointManager.SecurityProtocol;
+            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 
             try {
 
@@ -538,6 +555,9 @@ namespace Microsoft.PackageManagement.NuGetProvider
             } catch (Exception ex) {
                 ex.Dump(request);
                 request.WriteError(ErrorCategory.InvalidOperation, fastPackageReference, ex.Message);
+            } finally {
+                // Change back to user specified security protocol
+                System.Net.ServicePointManager.SecurityProtocol = securityProtocol;
             }
         }
 
