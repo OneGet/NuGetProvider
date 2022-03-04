@@ -25,8 +25,8 @@
 -->
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.PackageManagement\Microsoft.PackageManagement.csproj">
-      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
-      <IncludeAssets>Microsoft.PackageManagement.dll</IncludeAssets>
+      <!--<ReferenceOutputAssembly>true</ReferenceOutputAssembly> -->
+      <!-- <IncludeAssets>Microsoft.PackageManagement.dll</IncludeAssets> -->
     </ProjectReference> 
   </ItemGroup>
 
