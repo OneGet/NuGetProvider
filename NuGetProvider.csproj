@@ -23,7 +23,7 @@
 	<PackageReference Include="Microsoft.PowerShell.PackageManagement.Core" Version="1.2.1-preview" />
   </ItemGroup>
 -->
-  <ProjectReference Include="..\Microsoft.PackageManagement.csproj">
+  <ProjectReference Include="..\Microsoft.PackageManagement\Microsoft.PackageManagement.csproj">
     <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     <IncludeAssets>Microsoft.PackageManagement.dll</IncludeAssets>
   </ProjectReference> 
