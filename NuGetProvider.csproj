@@ -24,7 +24,7 @@
   </ItemGroup>
 -->
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.PackageManagement\Microsoft.PackageManagement.csproj">
+    <ProjectReference Include="..\Microsoft.PowerShell.PackageManagement\Microsoft.PowerShell.PackageManagement.csproj">
       <!--<ReferenceOutputAssembly>true</ReferenceOutputAssembly> -->
       <!-- <IncludeAssets>Microsoft.PackageManagement.dll</IncludeAssets> -->
     </ProjectReference> 
