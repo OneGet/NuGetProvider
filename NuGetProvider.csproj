@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>net452;netstandard2.0</TargetFrameworks>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <DelaySign>true</DelaySign>
     <AssemblyName>Microsoft.PackageManagement.NuGetProvider</AssemblyName>
     <AssemblyOriginatorKeyFile>35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
@@ -23,14 +23,18 @@
 	<PackageReference Include="Microsoft.PowerShell.PackageManagement.Core" Version="1.2.1-preview" />
   </ItemGroup>
 -->
+
+<!--
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.PowerShell.PackageManagement\Microsoft.PowerShell.PackageManagement.csproj">
-      <!--<ReferenceOutputAssembly>true</ReferenceOutputAssembly> -->
-      <!-- <IncludeAssets>Microsoft.PackageManagement.dll</IncludeAssets> -->
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+       <IncludeAssets>Microsoft.PackageManagement.dll</IncludeAssets>
     </ProjectReference> 
   </ItemGroup>
+--> 
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net452' ">
+    <ProjectReference Include="..\Microsoft.PowerShell.PackageManagement\Microsoft.PowerShell.PackageManagement.csproj">
     <PackageReference Include="Microsoft.PowerShell.3.ReferenceAssemblies" Version="1.0.0" />
   </ItemGroup>
   
