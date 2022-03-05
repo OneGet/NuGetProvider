@@ -34,7 +34,7 @@
 --> 
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net452' ">
-    <ProjectReference Include="..\Microsoft.PowerShell.PackageManagement\Microsoft.PowerShell.PackageManagement.csproj">
+    <ProjectReference Include="..\Microsoft.PowerShell.PackageManagement\Microsoft.PowerShell.PackageManagement.csproj" />
     <PackageReference Include="Microsoft.PowerShell.3.ReferenceAssemblies" Version="1.0.0" />
   </ItemGroup>
   
