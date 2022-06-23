@@ -85,6 +85,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
         internal const string DefaultConfig = @"<?xml version=""1.0""?>
 <configuration>
   <packageSources>
+    <add key=""nuget.org"" value=""https://api.nuget.org/v3/index.json"" protocolVersion=""3"" />
   </packageSources>
 </configuration>";
 
