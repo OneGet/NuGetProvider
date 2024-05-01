@@ -72,12 +72,16 @@ namespace Microsoft.PackageManagement.NuGetProvider
                     // Package is from packageId + version
                     // PackageRegistration is from packageId
                     bool isRegistrationType = false;
+                    bool isCatalogRoot = false;
                     foreach (string t in root.Metadata.type)
                     {
                         if (t.Equals("PackageRegistration", StringComparison.OrdinalIgnoreCase))
                         {
                             isRegistrationType = true;
-                            break;
+                        }
+                        else if (t.Equals("catalog:CatalogRoot", StringComparison.OrdinalIgnoreCase))
+                        {
+                            isCatalogRoot = true;
                         }
                     }
 
@@ -100,7 +104,7 @@ namespace Microsoft.PackageManagement.NuGetProvider
                         // In addition, when DeepMetadataBypass is enabled, we MUST use the registration index to get package info
                         // If a call to -Name -RequiredVersion is done, DeepMetadataBypass will never be enabled (for now)
                         // If we wanted, we could enable this by checking if !isRegistrationType && context.EnableDeepMetadataBypass, then call into Find with the registration index URL
-                        if (!context.AllVersions && packageSemanticVersions != null && !context.EnableDeepMetadataBypass)
+                        if (!context.AllVersions && packageSemanticVersions != null && !context.EnableDeepMetadataBypass && !isCatalogRoot)
                         {
                             foreach (SemanticVersion packageVersion in context.PackageInfo.AllVersions)
                             {
