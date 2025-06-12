@@ -1,0 +1,34 @@
+version: 1.0.{build}
+image: Visual Studio 2017
+configuration: Release
+platform: Any CPU
+
+# Install Pester
+init: 
+    - cinst -y pester --force
+
+install:
+
+- ps: $psversiontable
+- reg ADD "HKLM\Software\Microsoft\StrongName\Verification\Microsoft.PackageManagement.NuGetProvider,31bf3856ad364e35"  /f
+- reg ADD "HKLM\Software\Wow6432Node\Microsoft\StrongName\Verification\Microsoft.PackageManagement.NuGetProvider,31bf3856ad364e35"  /f
+
+before_build:
+  - ps: |
+        .\Generate-Resources.ps1
+        Push-Location .\vs-csproj
+        nuget restore -PackagesDirectory (Join-Path $pwd packages)
+        Pop-Location
+build_script:
+  - msbuild "vs-csproj\NugetLightProvider.csproj" /verbosity:normal
+  - ps: .\build.ps1 -Framework all -Configuration Release -Destination temp # Binaries are not used, just to verify compilation is not broken
+after_build:
+- ps: |
+    Get-ChildItem "C:\output\release\bin" -Recurse | ForEach-Object { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName releasebits -Type Auto }
+
+before_test:
+- ps: |
+    # Import the Nuget provider just built
+    Import-PackageProvider C:\output\release\bin\Microsoft.PackageManagement.NuGetProvider.dll -Force -Verbose
+   
+    & .\smoketest.tests.ps1

@@ -1,30 +1,23 @@
-# TSA bug filing
 
-TSA bug filing file has been configured: tsaoptions.json. Official builds are required to have TSA bug filing enabled by default. [Learn more](https://aka.ms/OBTSA)
+[![Build status](https://ci.appveyor.com/api/projects/status/vd65p4kpgi0pvto5?svg=true)](https://ci.appveyor.com/project/jianyunt/nugetprovider)
 
-# Introduction
 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project.
+NuGet provider
+==============
 
-# Getting Started
+NuGetProvider is a OneGet (PackageManagement) provider.
+It primarily supports finding and installing packages from [NuGet.org][nugetorg].
+It is also used by [PowerShellGet][psget] for finding and installing PowerShell modules from [PowerShellGallery][psgallery].
 
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
+It supports FullCLR and CoreCLR, meaning works for Windows, Linux, and OSX as part of [PowerShellCore][pscore].
 
-1. Installation process
-2. Software dependencies
-3. Latest releases
-4. API references
+As a git submodule, it is compiled and tested with [OneGet][oneget] together.
 
-# Build and Test
+For more information, see [OneGet wiki][wiki].
 
-TODO: Describe and show how to build your code and run the tests.
-
-# Contribute
-
-TODO: Explain how other users and developers can contribute to make your code better.
-
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+[nugetorg]: https://www.nuget.org
+[psgallery]: https://www.PowerShellGallery.com
+[psget]: https://github.com/PowerShell/PowerShellget
+[oneget]: https://www.oneget.org
+[pscore]: https://github.com/PowerShell/PowerShell
+[wiki]: https://github.com/oneget/oneget/wiki
