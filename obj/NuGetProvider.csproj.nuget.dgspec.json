@@ -1,0 +1,81 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\code\\nugetProviderMScodeHub\\NuGetProvider\\NuGetProvider.csproj": {}
+  },
+  "projects": {
+    "C:\\code\\nugetProviderMScodeHub\\NuGetProvider\\NuGetProvider.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\code\\nugetProviderMScodeHub\\NuGetProvider\\NuGetProvider.csproj",
+        "projectName": "NuGetProvider",
+        "projectPath": "C:\\code\\nugetProviderMScodeHub\\NuGetProvider\\NuGetProvider.csproj",
+        "packagesPath": "C:\\Users\\americks\\.nuget\\packages\\",
+        "outputPath": "C:\\code\\nugetProviderMScodeHub\\NuGetProvider\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\code\\nugetProviderMScodeHub\\NuGetProvider\\NuGet.Config",
+          "C:\\Users\\americks\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net472"
+        ],
+        "sources": {
+          "https://pkgs.dev.azure.com/powershell-rel/PackageManagement/_packaging/InternalPkgMgmtFeed/nuget/v3/index.json": {}
+        },
+        "frameworks": {
+          "net472": {
+            "targetAlias": "net472",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "allWarningsAsErrors": true,
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net472": {
+          "targetAlias": "net472",
+          "dependencies": {
+            "Microsoft.CSharp": {
+              "target": "Package",
+              "version": "[4.5.0, )"
+            },
+            "Microsoft.PowerShell.3.ReferenceAssemblies": {
+              "target": "Package",
+              "version": "[1.0.0, )"
+            },
+            "Microsoft.PowerShell.4.ReferenceAssemblies": {
+              "target": "Package",
+              "version": "[1.0.0, )"
+            },
+            "Microsoft.PowerShell.5.ReferenceAssemblies": {
+              "target": "Package",
+              "version": "[1.1.0, )"
+            },
+            "Microsoft.PowerShell.PackageManagement.Core": {
+              "target": "Package",
+              "version": "[1.2.1-preview, )"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301\\RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

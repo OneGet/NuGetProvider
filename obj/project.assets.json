@@ -1,0 +1,356 @@
+{
+  "version": 3,
+  "targets": {
+    ".NETFramework,Version=v4.7.2": {
+      "Microsoft.CSharp/4.5.0": {
+        "type": "package",
+        "frameworkAssemblies": [
+          "Microsoft.CSharp"
+        ],
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "Microsoft.PowerShell.3.ReferenceAssemblies/1.0.0": {
+        "type": "package",
+        "compile": {
+          "lib/net4/System.Management.Automation.dll": {}
+        },
+        "runtime": {
+          "lib/net4/System.Management.Automation.dll": {}
+        }
+      },
+      "Microsoft.PowerShell.4.ReferenceAssemblies/1.0.0": {
+        "type": "package",
+        "compile": {
+          "lib/net4/System.Management.Automation.dll": {}
+        },
+        "runtime": {
+          "lib/net4/System.Management.Automation.dll": {}
+        }
+      },
+      "Microsoft.PowerShell.5.ReferenceAssemblies/1.1.0": {
+        "type": "package",
+        "compile": {
+          "lib/net4/System.Management.Automation.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net4/System.Management.Automation.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Microsoft.PowerShell.PackageManagement.Core/1.2.1-preview": {
+        "type": "package",
+        "compile": {
+          "lib/net45/Microsoft.PackageManagement.ArchiverProviders.dll": {},
+          "lib/net45/Microsoft.PackageManagement.CoreProviders.dll": {},
+          "lib/net45/Microsoft.PackageManagement.MetaProvider.PowerShell.dll": {},
+          "lib/net45/Microsoft.PackageManagement.MsiProvider.dll": {},
+          "lib/net45/Microsoft.PackageManagement.MsuProvider.dll": {},
+          "lib/net45/Microsoft.PackageManagement.dll": {},
+          "lib/net45/Microsoft.PowerShell.PackageManagement.dll": {}
+        },
+        "runtime": {
+          "lib/net45/Microsoft.PackageManagement.ArchiverProviders.dll": {},
+          "lib/net45/Microsoft.PackageManagement.CoreProviders.dll": {},
+          "lib/net45/Microsoft.PackageManagement.MetaProvider.PowerShell.dll": {},
+          "lib/net45/Microsoft.PackageManagement.MsiProvider.dll": {},
+          "lib/net45/Microsoft.PackageManagement.MsuProvider.dll": {},
+          "lib/net45/Microsoft.PackageManagement.dll": {},
+          "lib/net45/Microsoft.PowerShell.PackageManagement.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Microsoft.CSharp/4.5.0": {
+      "sha512": "kaj6Wb4qoMuH3HySFJhxwQfe8R/sJsNJnANrvv8WdFPMoNbKY5htfNscv+LHCu5ipz+49m2e+WQXpLXr9XYemQ==",
+      "type": "package",
+      "path": "microsoft.csharp/4.5.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.TXT",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
+        "lib/net45/_._",
+        "lib/netcore50/Microsoft.CSharp.dll",
+        "lib/netcoreapp2.0/_._",
+        "lib/netstandard1.3/Microsoft.CSharp.dll",
+        "lib/netstandard2.0/Microsoft.CSharp.dll",
+        "lib/portable-net45+win8+wp8+wpa81/_._",
+        "lib/uap10.0.16299/_._",
+        "lib/win8/_._",
+        "lib/wp80/_._",
+        "lib/wpa81/_._",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
+        "lib/xamarintvos10/_._",
+        "lib/xamarinwatchos10/_._",
+        "microsoft.csharp.4.5.0.nupkg.sha512",
+        "microsoft.csharp.nuspec",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/net45/_._",
+        "ref/netcore50/Microsoft.CSharp.dll",
+        "ref/netcore50/Microsoft.CSharp.xml",
+        "ref/netcore50/de/Microsoft.CSharp.xml",
+        "ref/netcore50/es/Microsoft.CSharp.xml",
+        "ref/netcore50/fr/Microsoft.CSharp.xml",
+        "ref/netcore50/it/Microsoft.CSharp.xml",
+        "ref/netcore50/ja/Microsoft.CSharp.xml",
+        "ref/netcore50/ko/Microsoft.CSharp.xml",
+        "ref/netcore50/ru/Microsoft.CSharp.xml",
+        "ref/netcore50/zh-hans/Microsoft.CSharp.xml",
+        "ref/netcore50/zh-hant/Microsoft.CSharp.xml",
+        "ref/netcoreapp2.0/_._",
+        "ref/netstandard1.0/Microsoft.CSharp.dll",
+        "ref/netstandard1.0/Microsoft.CSharp.xml",
+        "ref/netstandard1.0/de/Microsoft.CSharp.xml",
+        "ref/netstandard1.0/es/Microsoft.CSharp.xml",
+        "ref/netstandard1.0/fr/Microsoft.CSharp.xml",
+        "ref/netstandard1.0/it/Microsoft.CSharp.xml",
+        "ref/netstandard1.0/ja/Microsoft.CSharp.xml",
+        "ref/netstandard1.0/ko/Microsoft.CSharp.xml",
+        "ref/netstandard1.0/ru/Microsoft.CSharp.xml",
+        "ref/netstandard1.0/zh-hans/Microsoft.CSharp.xml",
+        "ref/netstandard1.0/zh-hant/Microsoft.CSharp.xml",
+        "ref/netstandard2.0/Microsoft.CSharp.dll",
+        "ref/netstandard2.0/Microsoft.CSharp.xml",
+        "ref/portable-net45+win8+wp8+wpa81/_._",
+        "ref/uap10.0.16299/_._",
+        "ref/win8/_._",
+        "ref/wp80/_._",
+        "ref/wpa81/_._",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
+        "ref/xamarintvos10/_._",
+        "ref/xamarinwatchos10/_._",
+        "useSharedDesignerContext.txt",
+        "version.txt"
+      ]
+    },
+    "Microsoft.PowerShell.3.ReferenceAssemblies/1.0.0": {
+      "sha512": "lMDlqY0Dhqg4Fg+1B9MkLwfUuw46wQWdXqWzC1dsJcsFHLEt8BO7um7rtETTuoev+l7rxarRCIeeFcd1aCqRxg==",
+      "type": "package",
+      "path": "microsoft.powershell.3.referenceassemblies/1.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net4/Microsoft.Management.Infrastructure.CimCmdlets.dll",
+        "lib/net4/Microsoft.Management.Infrastructure.Native.dll",
+        "lib/net4/Microsoft.Management.Infrastructure.dll",
+        "lib/net4/Microsoft.PowerShell.Activities.dll",
+        "lib/net4/Microsoft.PowerShell.Commands.Diagnostics.dll",
+        "lib/net4/Microsoft.PowerShell.Commands.Management.dll",
+        "lib/net4/Microsoft.PowerShell.Commands.Utility.dll",
+        "lib/net4/Microsoft.PowerShell.ConsoleHost.dll",
+        "lib/net4/Microsoft.PowerShell.Core.Activities.dll",
+        "lib/net4/Microsoft.PowerShell.Diagnostics.Activities.dll",
+        "lib/net4/Microsoft.PowerShell.Editor.dll",
+        "lib/net4/Microsoft.PowerShell.GPowerShell.dll",
+        "lib/net4/Microsoft.PowerShell.GraphicalHost.dll",
+        "lib/net4/Microsoft.PowerShell.ISECommon.dll",
+        "lib/net4/Microsoft.PowerShell.Management.Activities.dll",
+        "lib/net4/Microsoft.PowerShell.ScheduledJob.dll",
+        "lib/net4/Microsoft.PowerShell.Security.Activities.dll",
+        "lib/net4/Microsoft.PowerShell.Security.dll",
+        "lib/net4/Microsoft.PowerShell.Utility.Activities.dll",
+        "lib/net4/Microsoft.Powershell.Workflow.ServiceCore.dll",
+        "lib/net4/System.Management.Automation.dll",
+        "microsoft.powershell.3.referenceassemblies.1.0.0.nupkg.sha512",
+        "microsoft.powershell.3.referenceassemblies.nuspec"
+      ]
+    },
+    "Microsoft.PowerShell.4.ReferenceAssemblies/1.0.0": {
+      "sha512": "u/6673J9ITLjdCVMLHV3rx0kiXDoPy4EIMWhI7goXPVT3ch/tdULXOWWr/gSYkvnk/Bz4vVs8ge75dnQew6K7w==",
+      "type": "package",
+      "path": "microsoft.powershell.4.referenceassemblies/1.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net4/Microsoft.Management.Infrastructure.Native.dll",
+        "lib/net4/Microsoft.Management.Infrastructure.dll",
+        "lib/net4/Microsoft.PowerShell.Activities.dll",
+        "lib/net4/Microsoft.PowerShell.Commands.Diagnostics.dll",
+        "lib/net4/Microsoft.PowerShell.ConsoleHost.dll",
+        "lib/net4/Microsoft.PowerShell.Core.Activities.dll",
+        "lib/net4/Microsoft.PowerShell.Diagnostics.Activities.dll",
+        "lib/net4/Microsoft.PowerShell.Editor.dll",
+        "lib/net4/Microsoft.PowerShell.GPowerShell.dll",
+        "lib/net4/Microsoft.PowerShell.GraphicalHost.dll",
+        "lib/net4/Microsoft.PowerShell.ISECommon.dll",
+        "lib/net4/Microsoft.PowerShell.Management.Activities.dll",
+        "lib/net4/Microsoft.PowerShell.Security.Activities.dll",
+        "lib/net4/Microsoft.PowerShell.Security.dll",
+        "lib/net4/Microsoft.PowerShell.Utility.Activities.dll",
+        "lib/net4/Microsoft.PowerShell.Workflow.ServiceCore.dll",
+        "lib/net4/System.Management.Automation.dll",
+        "microsoft.powershell.4.referenceassemblies.1.0.0.nupkg.sha512",
+        "microsoft.powershell.4.referenceassemblies.nuspec"
+      ]
+    },
+    "Microsoft.PowerShell.5.ReferenceAssemblies/1.1.0": {
+      "sha512": "EE87t3aUXlO0Rjq83Ti8z1g4wwsWnB4W+pOn84i3QWzUOOuP5gZg8n4Y8XTZ7GkxGcoSR6w/d/kBJTJbc3VZPQ==",
+      "type": "package",
+      "path": "microsoft.powershell.5.referenceassemblies/1.1.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net4/Microsoft.Management.Infrastructure.dll",
+        "lib/net4/Microsoft.PowerShell.Activities.dll",
+        "lib/net4/Microsoft.PowerShell.Activities.xml",
+        "lib/net4/Microsoft.PowerShell.Commands.Diagnostics.dll",
+        "lib/net4/Microsoft.PowerShell.ConsoleHost.dll",
+        "lib/net4/Microsoft.PowerShell.ConsoleHost.xml",
+        "lib/net4/Microsoft.PowerShell.Core.Activities.dll",
+        "lib/net4/Microsoft.PowerShell.Core.Activities.xml",
+        "lib/net4/Microsoft.PowerShell.Diagnostics.Activities.dll",
+        "lib/net4/Microsoft.PowerShell.Diagnostics.Activities.xml",
+        "lib/net4/Microsoft.PowerShell.Editor.dll",
+        "lib/net4/Microsoft.PowerShell.GPowerShell.dll",
+        "lib/net4/Microsoft.PowerShell.GPowerShell.xml",
+        "lib/net4/Microsoft.PowerShell.GraphicalHost.dll",
+        "lib/net4/Microsoft.PowerShell.GraphicalHost.xml",
+        "lib/net4/Microsoft.PowerShell.ISECommon.dll",
+        "lib/net4/Microsoft.PowerShell.ISECommon.xml",
+        "lib/net4/Microsoft.PowerShell.Management.Activities.dll",
+        "lib/net4/Microsoft.PowerShell.Management.Activities.xml",
+        "lib/net4/Microsoft.PowerShell.PSReadLine.dll",
+        "lib/net4/Microsoft.PowerShell.PackageManagement.dll",
+        "lib/net4/Microsoft.PowerShell.Security.Activities.dll",
+        "lib/net4/Microsoft.PowerShell.Security.Activities.xml",
+        "lib/net4/Microsoft.PowerShell.Security.dll",
+        "lib/net4/Microsoft.PowerShell.Security.xml",
+        "lib/net4/Microsoft.PowerShell.Utility.Activities.dll",
+        "lib/net4/Microsoft.PowerShell.Utility.Activities.xml",
+        "lib/net4/Microsoft.PowerShell.Workflow.ServiceCore.xml",
+        "lib/net4/Microsoft.Powershell.Workflow.ServiceCore.dll",
+        "lib/net4/System.Management.Automation.dll",
+        "lib/net4/System.Management.Automation.xml",
+        "microsoft.powershell.5.referenceassemblies.1.1.0.nupkg.sha512",
+        "microsoft.powershell.5.referenceassemblies.nuspec"
+      ]
+    },
+    "Microsoft.PowerShell.PackageManagement.Core/1.2.1-preview": {
+      "sha512": "5s/Zbjicz5NlfWpcrznrvIEf+cfF1FKSjVEtnZ4WVdMS/7oh8ztvUZ6Er5FbYVGBjQ7igxIqf+6GZnAOY6iAoA==",
+      "type": "package",
+      "path": "microsoft.powershell.packagemanagement.core/1.2.1-preview",
+      "files": [
+        ".nupkg.metadata",
+        "lib/net45/Microsoft.PackageManagement.ArchiverProviders.dll",
+        "lib/net45/Microsoft.PackageManagement.CoreProviders.dll",
+        "lib/net45/Microsoft.PackageManagement.MetaProvider.PowerShell.dll",
+        "lib/net45/Microsoft.PackageManagement.MsiProvider.dll",
+        "lib/net45/Microsoft.PackageManagement.MsuProvider.dll",
+        "lib/net45/Microsoft.PackageManagement.dll",
+        "lib/net45/Microsoft.PowerShell.PackageManagement.dll",
+        "lib/netcoreapp2.0/Microsoft.PackageManagement.ArchiverProviders.dll",
+        "lib/netcoreapp2.0/Microsoft.PackageManagement.CoreProviders.dll",
+        "lib/netcoreapp2.0/Microsoft.PackageManagement.MetaProvider.PowerShell.dll",
+        "lib/netcoreapp2.0/Microsoft.PackageManagement.dll",
+        "lib/netcoreapp2.0/Microsoft.PowerShell.PackageManagement.dll",
+        "lib/netstandard1.6/Microsoft.PackageManagement.ArchiverProviders.dll",
+        "lib/netstandard1.6/Microsoft.PackageManagement.CoreProviders.dll",
+        "lib/netstandard1.6/Microsoft.PackageManagement.MetaProvider.PowerShell.dll",
+        "lib/netstandard1.6/Microsoft.PackageManagement.dll",
+        "lib/netstandard1.6/Microsoft.PowerShell.PackageManagement.dll",
+        "microsoft.powershell.packagemanagement.core.1.2.1-preview.nupkg.sha512",
+        "microsoft.powershell.packagemanagement.core.nuspec"
+      ]
+    }
+  },
+  "projectFileDependencyGroups": {
+    ".NETFramework,Version=v4.7.2": [
+      "Microsoft.CSharp >= 4.5.0",
+      "Microsoft.PowerShell.3.ReferenceAssemblies >= 1.0.0",
+      "Microsoft.PowerShell.4.ReferenceAssemblies >= 1.0.0",
+      "Microsoft.PowerShell.5.ReferenceAssemblies >= 1.1.0",
+      "Microsoft.PowerShell.PackageManagement.Core >= 1.2.1-preview"
+    ]
+  },
+  "packageFolders": {
+    "C:\\Users\\americks\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "C:\\code\\nugetProviderMScodeHub\\NuGetProvider\\NuGetProvider.csproj",
+      "projectName": "NuGetProvider",
+      "projectPath": "C:\\code\\nugetProviderMScodeHub\\NuGetProvider\\NuGetProvider.csproj",
+      "packagesPath": "C:\\Users\\americks\\.nuget\\packages\\",
+      "outputPath": "C:\\code\\nugetProviderMScodeHub\\NuGetProvider\\obj\\",
+      "projectStyle": "PackageReference",
+      "crossTargeting": true,
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
+      "configFilePaths": [
+        "C:\\code\\nugetProviderMScodeHub\\NuGetProvider\\NuGet.Config",
+        "C:\\Users\\americks\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+      ],
+      "originalTargetFrameworks": [
+        "net472"
+      ],
+      "sources": {
+        "https://pkgs.dev.azure.com/powershell-rel/PackageManagement/_packaging/InternalPkgMgmtFeed/nuget/v3/index.json": {}
+      },
+      "frameworks": {
+        "net472": {
+          "targetAlias": "net472",
+          "projectReferences": {}
+        }
+      },
+      "warningProperties": {
+        "allWarningsAsErrors": true,
+        "warnAsError": [
+          "NU1605"
+        ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      },
+      "SdkAnalysisLevel": "9.0.300"
+    },
+    "frameworks": {
+      "net472": {
+        "targetAlias": "net472",
+        "dependencies": {
+          "Microsoft.CSharp": {
+            "target": "Package",
+            "version": "[4.5.0, )"
+          },
+          "Microsoft.PowerShell.3.ReferenceAssemblies": {
+            "target": "Package",
+            "version": "[1.0.0, )"
+          },
+          "Microsoft.PowerShell.4.ReferenceAssemblies": {
+            "target": "Package",
+            "version": "[1.0.0, )"
+          },
+          "Microsoft.PowerShell.5.ReferenceAssemblies": {
+            "target": "Package",
+            "version": "[1.1.0, )"
+          },
+          "Microsoft.PowerShell.PackageManagement.Core": {
+            "target": "Package",
+            "version": "[1.2.1-preview, )"
+          }
+        },
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301\\RuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}

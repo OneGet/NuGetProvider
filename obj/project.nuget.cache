@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "dgSpecHash": "2/kP4dYIxik=",
+  "success": true,
+  "projectFilePath": "C:\\code\\nugetProviderMScodeHub\\NuGetProvider\\NuGetProvider.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\americks\\.nuget\\packages\\microsoft.csharp\\4.5.0\\microsoft.csharp.4.5.0.nupkg.sha512",
+    "C:\\Users\\americks\\.nuget\\packages\\microsoft.powershell.3.referenceassemblies\\1.0.0\\microsoft.powershell.3.referenceassemblies.1.0.0.nupkg.sha512",
+    "C:\\Users\\americks\\.nuget\\packages\\microsoft.powershell.4.referenceassemblies\\1.0.0\\microsoft.powershell.4.referenceassemblies.1.0.0.nupkg.sha512",
+    "C:\\Users\\americks\\.nuget\\packages\\microsoft.powershell.5.referenceassemblies\\1.1.0\\microsoft.powershell.5.referenceassemblies.1.1.0.nupkg.sha512",
+    "C:\\Users\\americks\\.nuget\\packages\\microsoft.powershell.packagemanagement.core\\1.2.1-preview\\microsoft.powershell.packagemanagement.core.1.2.1-preview.nupkg.sha512"
+  ],
+  "logs": []
+}
